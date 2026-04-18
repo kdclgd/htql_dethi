@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khởi động - Hệ Thống Quản Lý Đề Thi</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="libs/localforage.min.js"></script>
+    <style>
+        body {
+            margin: 0; height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: linear-gradient(135deg, #2c3e50, #3498db); color: white; font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .splash-box {
+            text-align: center; background: rgba(255, 255, 255, 0.1);
+            padding: 50px; border-radius: 15px; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+            max-width: 600px;
+        }
+        h1 { margin: 0 0 10px 0; font-size: 32px; }
+        p { margin: 0 0 30px 0; font-size: 16px; color: #ecf0f1; line-height: 1.5; }
+        
+        .btn-start {
+            padding: 15px 40px; font-size: 18px; font-weight: bold; color: #2c3e50;
+            background: #f1c40f; border: none; border-radius: 30px; cursor: pointer;
+            transition: 0.3s; box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+        }
+        .btn-start:hover { background: #f39c12; transform: translateY(-2px); }
+        
+        /* Nút cho phần Đăng xuất */
+        .btn-clear {
+            padding: 12px 25px; font-size: 16px; font-weight: bold; color: white;
+            background: #e74c3c; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-clear:hover { background: #c0392b; transform: scale(1.05); }
+        
+        .btn-keep {
+            padding: 12px 25px; font-size: 16px; font-weight: bold; color: white;
+            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 8px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-keep:hover { background: rgba(255, 255, 255, 0.3); }
+
+        #status-text { margin-top: 20px; font-size: 14px; font-style: italic; display: none; color: #f1c40f;}
+    </style>
+</head>
+<body>
+
+    <div class="splash-box" id="box-start">
+        <h1>HỆ THỐNG QUẢN LÝ ĐỀ THI</h1>
+        <p>Khối M (Kể chuyện) & Khối N (Cao độ - Tiết tấu)</p>
+        <button class="btn-start" onclick="initApp()">🚀 KHỞI ĐỘNG HỆ THỐNG</button>
+        <div id="status-text">Đang kiểm tra hệ thống...</div>
+    </div>
+
+    <div class="splash-box" id="box-logout" style="display: none;">
+        <h1 style="color: #f1c40f; font-size: 28px;">🔒 ĐÃ ĐĂNG XUẤT</h1>
+        <p>Để đảm bảo an toàn dữ liệu trên máy tính dùng chung, bạn có muốn <strong>xóa sạch</strong> toàn bộ Ngân hàng đề thi khỏi trình duyệt này không?</p>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn-clear" onclick="clearDataForSecurity()">🗑️ Có, Xóa Toàn Bộ</button>
+            <button class="btn-keep" onclick="keepDataAndGoHome()">Không, Giữ Nguyên</button>
+        </div>
+        <div id="logout-status" style="margin-top: 20px; font-size: 14px; font-style: italic; color: #f1c40f; display: none;">Đang xóa dữ liệu...</div>
+    </div>
+
+    <script>
+        // Khởi tạo kết nối DB
+        const khoiNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
+        const examNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_n" });
+        const khoiMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_m" });
+        const examMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_m" });
+        const sysDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "system" });
+
+        // --- KIỂM TRA TRẠNG THÁI URL KHI VỪA VÀO TRANG ---
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('logout') === 'true') {
+                // Nếu là vừa bấm logout, ẩn hộp khởi động, hiện hộp cảnh báo
+                document.getElementById('box-start').style.display = 'none';
+                document.getElementById('box-logout').style.display = 'block';
+            }
+        };
+
+        // --- CÁC HÀM XỬ LÝ ĐĂNG XUẤT ---
+        async function clearDataForSecurity() {
+            if(confirm("CẢNH BÁO CHÓT: Toàn bộ đề thi và cấu hình trên máy này sẽ bị xóa VĨNH VIỄN. Bạn bắt buộc phải Import lại file Backup cho lần sử dụng sau. Bạn chắc chắn chứ?")) {
+                const statusOut = document.getElementById('logout-status');
+                statusOut.style.display = 'block';
+                statusOut.innerText = "Đang dọn dẹp bộ nhớ an toàn...";
+
+                try {
+                    await khoiNDB.clear();
+                    await examNDB.clear();
+                    await khoiMDB.clear();
+                    await examMDB.clear();
+                    await sysDB.clear(); // Xóa luôn pass tùy chỉnh (nếu có)
+                    
+                    statusOut.innerText = "✅ Đã xóa sạch dữ liệu!";
+                    statusOut.style.color = "#2ecc71";
+                    
+                    setTimeout(() => {
+                        window.location.href = "start.html"; // Tải lại trang sạch sẽ
+                    }, 1500);
+                } catch(err) {
+                    alert("Lỗi khi xóa: " + err);
+                }
+            }
+        }
+
+        function keepDataAndGoHome() {
+            // Xóa chữ ?logout=true trên URL để về lại màn hình Khởi động bình thường
+            window.location.href = "start.html"; 
+        }
+
+        // --- HÀM KHỞI ĐỘNG APP (Giữ nguyên như cũ của cụ) ---
+        async function initApp() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                try { await elem.requestFullscreen(); } catch (err) { console.log("Lỗi Fullscreen:", err); }
+            }
+
+            const statusEl = document.getElementById('status-text');
+            statusEl.style.display = 'block';
+            
+            const keysN = await khoiNDB.keys();
+            const keysM = await khoiMDB.keys();
+
+            if (keysN.length === 0 && keysM.length === 0) {
+                statusEl.innerText = "Hệ thống trống. Đang quét thư mục data...";
+                
+                setTimeout(async () => {
+                    if (confirm("Hệ thống hiện chưa có dữ liệu.\nBạn có muốn tự động nạp dữ liệu từ file 'data/backup.json' không?")) {
+                        try {
+                            statusEl.innerText = "Đang tải dữ liệu từ data/backup.json...";
+                            const response = await fetch('data/backup.json');
+                            if (!response.ok) throw new Error("Không tìm thấy file backup.json");
+                            
+                            const data = await response.json();
+                            
+                            statusEl.innerText = "Đang ghi vào cơ sở dữ liệu. Vui lòng đợi...";
+                            
+                            async function restoreDB(dbInstance, sourceObj) {
+                                await dbInstance.clear(); 
+                                if(sourceObj) {
+                                    for(let key in sourceObj) { await dbInstance.setItem(key, sourceObj[key]); }
+                                }
+                            }
+
+                            if (data.nganhang_n !== undefined || data.nganhang_m !== undefined) {
+                                await restoreDB(khoiNDB, data.nganhang_n); await restoreDB(examNDB, data.dethi_n);
+                                await restoreDB(khoiMDB, data.nganhang_m); await restoreDB(examMDB, data.dethi_m);
+                                if(data.system) await restoreDB(sysDB, data.system);
+                            }
+
+                            alert("✅ Đã nạp dữ liệu thành công! Đang vào hệ thống...");
+                        } catch (error) {
+                            alert("❌ Không thể nạp tự động!\nNguyên nhân: Không tìm thấy file 'data/backup.json' hoặc bạn đang không chạy qua Local Server.\nVui lòng vào mục 'Cấu hình & Bảo mật' để nạp thủ công.");
+                        }
+                    }
+                    window.location.href = "index.html";
+                }, 500);
+            } else {
+                statusEl.innerText = "Đã tìm thấy dữ liệu. Đang vào hệ thống...";
+                setTimeout(() => { window.location.href = "index.html"; }, 800);
+            }
+        }
+    </script>
+</body>
+</html>

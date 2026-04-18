@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình & Bảo mật - Hệ Thống Đề Thi</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <script src="libs/localforage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script> 
+    <script src="js/main.js"></script>
+    
+    <style>
+        /* BỐ CỤC CHUNG */
+        body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 250px; min-width: 250px; background: #2c3e50; height: 100%; color: white; display: flex; flex-direction: column; z-index: 1000; }
+        .sidebar-header { padding: 20px; background: #1a252f; text-align: center; font-weight: bold; font-size: 18px; }
+        .menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; }
+        .menu-item a { color: white; text-decoration: none; padding: 15px 20px; display: block; transition: 0.3s; }
+        .menu-item a:hover, .menu-item.active a { background: #34495e; border-left: 4px solid #3498db; }
+        .menu-title { padding: 10px 20px; font-size: 12px; color: #95a5a6; text-transform: uppercase; margin-top: 10px; }
+        
+        /* MAIN CONTENT */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; background: #f4f7f6; overflow: hidden; }
+        .topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 99; }
+        .content-area { flex-grow: 1; padding: 20px; overflow-y: auto; }
+
+        .page-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Form Style */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #2c3e50; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; max-width: 400px; font-size: 15px;}
+        .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.2s;}
+        .btn:hover { opacity: 0.9; }
+
+        /* GIAO DIỆN LOADING TIẾN ĐỘ */
+        #progress-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95); z-index: 9999; 
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .progress-box { width: 60%; max-width: 600px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); border: 1px solid #eee; }
+        .progress-bar-container { width: 100%; height: 25px; background: #e0e0e0; border-radius: 12.5px; overflow: hidden; margin: 20px 0; border: 1px solid #ccc; }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3498db, #2ecc71); transition: width 0.1s ease; }
+        #progress-title { margin: 0 0 10px 0; font-size: 20px; color: #2c3e50; font-weight: bold; }
+        #progress-percent { font-size: 24px; font-weight: bold; color: #27ae60; margin-bottom: 5px; }
+        #progress-subtext { font-size: 14px; color: #7f8c8d; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">Admin Panel</div>
+            <div class="menu-title">Ngân Hàng Đề Thi</div>
+            <ul class="menu">
+                <li class="menu-item"><a href="index.html" class="menu-link">🏠 Trang chủ</a></li>
+                <li class="menu-item"><a href="khoi-n.html" class="menu-link">🎵 Quản lý Khối N</a></li>
+                <li class="menu-item"><a href="khoi-m.html" class="menu-link">📚 Quản lý Khối M</a></li>
+            </ul>
+            <div class="menu-title">Hệ Thống</div>
+            <ul class="menu">
+                <li class="menu-item active"><a href="settings.html" class="menu-link">⚙️ Cấu hình & Bảo mật</a></li>
+            </ul>
+            <div style="padding: 15px; background: #1a252f; text-align: center; margin-top: auto;">
+                <a onclick="handleLogout()" style="color: #e74c3c; cursor: pointer; font-weight: bold; text-decoration: none;">🚪 Đăng xuất</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar"><h3 id="topbar-title" style="margin:0;">Cấu hình & Bảo mật</h3></header>
+            
+            <section class="content-area">
+                <div class="page-section">
+                    <h4 style="margin-top:0; font-size: 18px; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">Đổi Mật Khẩu Đăng Nhập</h4>
+                    <div class="form-group">
+                        <label>Mật khẩu hiện tại:</label>
+                        <input type="password" id="old-pass" placeholder="Nhập mật khẩu cũ">
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu mới:</label>
+                        <input type="password" id="new-pass" placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)">
+                    </div>
+                    <button class="btn" onclick="handleChangePassword()" style="background: #2980b9; color: white;">💾 Lưu Mật Khẩu</button>
+                    <div id="pass-message" style="margin-top: 15px; font-weight: bold;"></div>
+                </div>
+
+                <div class="page-section">
+                    <h4 style="margin-top:0; font-size: 18px; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">Dữ Liệu & Sao Lưu (Giải Pháp Chống Tràn RAM)</h4>
+                    <p style="color: #444; font-size: 15px; line-height: 1.5;">Hệ thống sẽ đóng gói <strong>Toàn bộ Ngân hàng câu hỏi (Khối M & N)</strong> cùng với <strong>Lịch sử các Mã đề thi</strong> thành một file an toàn tải về máy tính.</p>
+                    
+                    <div style="display: flex; gap: 20px; align-items: center; margin-top: 25px; flex-wrap: wrap;">
+                        <div style="border: 1px solid #c8e6c9; background: #e8f5e9; padding: 30px 20px; border-radius: 8px; flex: 1; text-align: center; min-width: 300px;">
+                            <strong style="display: block; margin-bottom: 15px; font-size: 16px; color: #27ae60;">Sao Lưu Toàn Bộ Dữ Liệu</strong>
+                            <button onclick="exportData()" class="btn" style="background: #27ae60; color: white;">⬇️ Tải file Backup về máy tính</button>
+                        </div>
+                        
+                        <div style="border: 1px solid #ffeeba; background: #fff3cd; padding: 30px 20px; border-radius: 8px; flex: 1; text-align: center; min-width: 300px;">
+                            <strong style="display: block; margin-bottom: 15px; font-size: 16px; color: #d35400;">Khôi Phục Dữ Liệu</strong>
+                            <input type="file" id="import-file" accept=".json,.enc" style="display: none;" onchange="importData(this)">
+                            <button onclick="document.getElementById('import-file').click()" class="btn" style="background: #f39c12; color: white;">📂 Chọn file Backup để Khôi phục</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="progress-overlay">
+        <div class="progress-box">
+            <h2 id="progress-title">Đang chuẩn bị...</h2>
+            <div id="progress-percent">0%</div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p id="progress-subtext">Tuyệt đối không làm mới trang hoặc đóng trình duyệt lúc này!</p>
+        </div>
+    </div>
+
+    <script>
+       
+        const khoiNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
+        const examNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_n" });
+        const khoiMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_m" });
+        const examMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_m" });
+
+        window.onload = () => { if(typeof checkLogin === 'function') checkLogin(); };
+
+        // --- HÀM UI LOADING ---
+        function updateProgress(title, percent, subtext) {
+            document.getElementById('progress-overlay').style.display = 'flex';
+            document.getElementById('progress-title').innerText = title;
+            document.getElementById('progress-percent').innerText = Math.round(percent) + '%';
+            document.getElementById('progress-bar').style.width = percent + '%';
+            if (subtext) document.getElementById('progress-subtext').innerText = subtext;
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-overlay').style.display = 'none';
+        }
+
+        async function handleChangePassword() {
+            const oldPass = document.getElementById('old-pass').value;
+            const newPass = document.getElementById('new-pass').value;
+            const msg = document.getElementById('pass-message');
+            const realPass = await sysDB.getItem('admin_pass') || 'admin123'; 
+
+            if (oldPass !== realPass) {
+                msg.style.color = '#e74c3c'; msg.innerText = "Mật khẩu cũ không đúng!"; return;
+            }
+            if (newPass.length < 6) {
+                msg.style.color = '#e74c3c'; msg.innerText = "Mật khẩu mới phải từ 6 ký tự!"; return;
+            }
+
+            await sysDB.setItem('admin_pass', newPass);
+            msg.style.color = '#27ae60'; msg.innerText = "✅ Đã cập nhật mật khẩu thành công!";
+            document.getElementById('old-pass').value = '';
+            document.getElementById('new-pass').value = '';
+        }
+
+        // =====================================================================
+        // THUẬT TOÁN XÉ LẺ MẢNG (CHỐNG LỖI RANGE ERROR / INVALID ARRAY LENGTH)
+        // =====================================================================
+        async function exportData() {
+            let pass = prompt("🔒 BẢO MẬT FILE: \nNhập mật khẩu để mã hóa file Backup này.\n(Ghi nhớ kỹ pass này để khôi phục. Để trống nếu KHÔNG CẦN mã hóa):");
+            if (pass === null) return; 
+            
+            let isEncrypted = pass.trim() !== "";
+
+            try {
+                updateProgress("Bắt đầu quét cơ sở dữ liệu...", 5, "Khởi tạo luồng xử lý...");
+
+                const targets = [
+                    { db: khoiNDB, keyName: "nganhang_n" },
+                    { db: examNDB, keyName: "dethi_n" },
+                    { db: khoiMDB, keyName: "nganhang_m" },
+                    { db: examMDB, keyName: "dethi_m" },
+                    { db: sysDB, keyName: "system" }
+                ];
+
+                // Sử dụng Mảng Chuỗi Phân Mảnh (Blob Parts) để không ép RAM nhớ 1 biến String khổng lồ
+                let blobParts = [];
+                blobParts.push('{\n');
+                blobParts.push(`"_isEncrypted": ${isEncrypted},\n`);
+
+                for (let i = 0; i < targets.length; i++) {
+                    let task = targets[i];
+                    let keys = await task.db.keys();
+                    
+                    blobParts.push(`"${task.keyName}": {\n`);
+                    
+                    for (let j = 0; j < keys.length; j++) {
+                        let key = keys[j];
+                        let val = await task.db.getItem(key);
+                        
+                        blobParts.push(`"${key}": `);
+
+                        // ĐÂY LÀ CHÌA KHÓA: NẾU LÀ MẢNG KHỔNG LỒ (Stories Khối M), PHẢI TÁCH TỪNG PHẦN TỬ
+                        if (Array.isArray(val)) {
+                            blobParts.push("[\n");
+                            for (let k = 0; k < val.length; k++) {
+                                let itemStr = JSON.stringify(val[k]);
+                                
+                                if (isEncrypted) {
+                                    itemStr = '"' + CryptoJS.AES.encrypt(itemStr, pass).toString() + '"';
+                                }
+                                
+                                blobParts.push(itemStr);
+                                if (k < val.length - 1) blobParts.push(",\n");
+                                
+                                // Cho trình duyệt "thở" để cập nhật % (Tránh treo máy)
+                                if (k % 5 === 0) {
+                                    let percent = 10 + (k / val.length) * 70;
+                                    updateProgress("Đang trích xuất & Mã hóa...", percent, `Xử lý Khối M: Truyện thứ ${k}/${val.length}`);
+                                    await new Promise(r => setTimeout(r, 2));
+                                }
+                            }
+                            blobParts.push("\n]");
+                        } 
+                        // NẾU LÀ OBJECT BÌNH THƯỜNG
+                        else {
+                            let itemStr = JSON.stringify(val);
+                            if (isEncrypted) {
+                                itemStr = '"' + CryptoJS.AES.encrypt(itemStr, pass).toString() + '"';
+                            }
+                            blobParts.push(itemStr);
+                        }
+                        
+                        if (j < keys.length - 1) blobParts.push(",\n");
+                    }
+                    
+                    blobParts.push("\n}");
+                    if (i < targets.length - 1) blobParts.push(",\n");
+                }
+                
+                blobParts.push('\n}');
+
+                updateProgress("Đang tạo File an toàn...", 95, "Đang ghi dữ liệu vào đĩa...");
+                
+                setTimeout(() => {
+                    try {
+                        let fileExtension = isEncrypted ? ".enc" : ".json";
+                        
+                        // Ép trực tiếp mảng chuỗi nhỏ thành file đĩa, giải phóng RAM
+                        let blob = new Blob(blobParts, { type: "application/json" });
+                        let url = URL.createObjectURL(blob);
+                        
+                        let dlAnchorElem = document.createElement('a');
+                        dlAnchorElem.setAttribute("href", url);
+                        
+                        const date = new Date();
+                        const dateString = `${date.getDate()}_${date.getMonth()+1}_${date.getFullYear()}`;
+                        dlAnchorElem.setAttribute("download", `Backup_Data_${dateString}${fileExtension}`);
+                        
+                        document.body.appendChild(dlAnchorElem);
+                        dlAnchorElem.click();
+                        document.body.removeChild(dlAnchorElem);
+                        URL.revokeObjectURL(url); 
+
+                        blobParts = null; // Xóa rác RAM ngay lập tức
+
+                        updateProgress("Tuyệt vời!", 100, `Đã tải xuống thành công.`);
+                        setTimeout(() => hideProgress(), 2500);
+
+                    } catch (err) {
+                        hideProgress();
+                        alert("Lỗi khi tạo đĩa Blob: " + err);
+                    }
+                }, 500);
+
+            } catch (err) {
+                hideProgress();
+                alert("Có lỗi xảy ra khi sao lưu: " + err);
+            }
+        }
+
+        // =====================================================================
+        // HÀM KHÔI PHỤC (TỰ ĐỘNG GIẢI MÃ CÁC MẢNG LỚN) - ĐÃ FIX LỖI NHẬN DIỆN
+        // =====================================================================
+        function importData(input) {
+            let file = input.files[0];
+            if (!file) return;
+
+            if (!confirm("CẢNH BÁO: Dữ liệu mới sẽ GHI ĐÈ và XÓA TOÀN BỘ Ngân hàng hiện tại. Bạn chắc chắn chứ?")) {
+                input.value = ''; return;
+            }
+
+            let reader = new FileReader();
+            
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    updateProgress("Đang nạp file vào bộ nhớ...", (e.loaded / e.total) * 15, "Vui lòng đợi...");
+                }
+            };
+
+            reader.onload = async function(e) {
+                updateProgress("Đang phân tích file...", 20, "Kiểm tra định dạng cấu trúc...");
+                
+                setTimeout(async () => {
+                    try {
+                        let fileContent = e.target.result;
+                        let data;
+                        let isV2Encrypted = false;
+                        let pass = "";
+                        let isJsonValid = false;
+
+                        // BƯỚC 1: KIỂM TRA ĐỊNH DẠNG FILE (Tách biệt hoàn toàn để an toàn)
+                        try {
+                            data = JSON.parse(fileContent);
+                            isJsonValid = true;
+                        } catch (e) {
+                            isJsonValid = false;
+                        }
+
+                        // BƯỚC 2: YÊU CẦU MẬT KHẨU VÀ CHUẨN BỊ GIẢI MÃ
+                        if (isJsonValid) {
+                            if (data._isEncrypted) {
+                                isV2Encrypted = true;
+                                hideProgress();
+                                pass = prompt("🔒 FILE ĐÃ ĐƯỢC MÃ HÓA BẢO VỆ!\nVui lòng nhập mật khẩu để giải mã:");
+                                if (!pass) { alert("Đã hủy khôi phục."); input.value = ''; return; }
+                                // Đã Fix thành updateProgress
+                                updateProgress("Đang chuẩn bị giải mã...", 25, "Vui lòng chờ...");
+                            }
+                        } else {
+                            // Xử lý file backup cũ (Mã hóa toàn cục - không phải đuôi chuẩn JSON)
+                            hideProgress(); 
+                            pass = prompt("🔒 FILE MÃ HÓA BẢN CŨ!\nVui lòng nhập mật khẩu để giải mã:");
+                            if (!pass) { input.value = ''; return; }
+                            
+                            updateProgress("Đang giải mã toàn cục...", 25, "Vui lòng chờ...");
+                            let decryptedBytes = CryptoJS.AES.decrypt(fileContent, pass);
+                            let decryptedString = decryptedBytes.toString(CryptoJS.enc.Utf8);
+                            if (!decryptedString) throw new Error("WRONG_PASSWORD");
+                            data = JSON.parse(decryptedString);
+                        }
+
+                        // BƯỚC 3: HÀM GIẢI MÃ TỪNG PHẦN TỬ & GHI VÀO DB
+                        async function restoreDB(dbInstance, sourceObj) {
+                            await dbInstance.clear(); 
+                            if(sourceObj) {
+                                let keys = Object.keys(sourceObj);
+                                for(let i=0; i<keys.length; i++) {
+                                    let key = keys[i];
+                                    if(key === "_isEncrypted") continue; 
+                                    
+                                    let val = sourceObj[key];
+                                    
+                                    if (isV2Encrypted) {
+                                        // Giải mã MẢNG LỚN Từng Phần Tử
+                                        if (Array.isArray(val)) {
+                                            for(let k=0; k<val.length; k++) {
+                                                if(typeof val[k] === 'string') {
+                                                    let bytes = CryptoJS.AES.decrypt(val[k], pass);
+                                                    let decStr = bytes.toString(CryptoJS.enc.Utf8);
+                                                    if(!decStr) throw new Error("WRONG_PASSWORD");
+                                                    val[k] = JSON.parse(decStr);
+                                                }
+                                                // Nhường luồng cho UI cập nhật %
+                                                if(k % 5 === 0) {
+                                                    updateProgress("Đang giải mã dữ liệu Khối M...", 30 + (k/val.length)*60, `Xử lý phần tử ${k}/${val.length}`);
+                                                    await new Promise(r => setTimeout(r, 2));
+                                                }
+                                            }
+                                        } 
+                                        // Giải mã Biến Đơn
+                                        else if (typeof val === 'string') {
+                                            let bytes = CryptoJS.AES.decrypt(val, pass);
+                                            let decStr = bytes.toString(CryptoJS.enc.Utf8);
+                                            if(!decStr) throw new Error("WRONG_PASSWORD");
+                                            val = JSON.parse(decStr);
+                                        }
+                                    }
+
+                                    await dbInstance.setItem(key, val);
+                                }
+                            }
+                        }
+
+                        // BƯỚC 4: THỰC THI KHÔI PHỤC VÀO TỪNG KHO
+                        if (data.nganhang_n !== undefined || data.nganhang_m !== undefined) {
+                            await restoreDB(khoiNDB, data.nganhang_n); await restoreDB(examNDB, data.dethi_n);
+                            await restoreDB(khoiMDB, data.nganhang_m); await restoreDB(examMDB, data.dethi_m);
+                            if(data.system) await restoreDB(sysDB, data.system);
+                        } else if (data.nganhang && data.dethi) {
+                            await restoreDB(khoiNDB, data.nganhang); await restoreDB(examNDB, data.dethi);
+                        } else {
+                            await restoreDB(khoiNDB, data);
+                        }
+
+                        updateProgress("Hoàn tất!", 100, "Đã Khôi phục thành công!");
+                        setTimeout(() => {
+                            hideProgress();
+                            alert("✅ Khôi phục Toàn bộ Dữ liệu thành công! Hệ thống sẽ khởi động lại.");
+                            input.value = ''; 
+                            location.reload(); 
+                        }, 500);
+
+                    } catch (err) { 
+                        hideProgress();
+                        if (err.message === "WRONG_PASSWORD") alert("❌ Giải mã thất bại: SAI MẬT KHẨU!");
+                        else alert("❌ Lỗi file: Tệp tin bị hỏng hoặc lỗi định dạng!"); 
+                        console.error(err);
+                        input.value = '';
+                    }
+                }, 200); 
+            };
+            
+            updateProgress("Khởi tạo tiến trình nạp đĩa...", 0, "");
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>

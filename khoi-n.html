@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Ngân hàng Khối N</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="libs/localforage.min.js"></script>
+    <script src="libs/mammoth.browser.min.js"></script>
+    <script src="js/main.js"></script>
+    <style>
+        /* BỐ CỤC CHUNG */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-width: 250px;
+            background: #2c3e50;
+            height: 100%;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #1a252f;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .menu-item a {
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .menu-item a:hover,
+        .menu-item.active a {
+            background: #34495e;
+            border-left: 4px solid #3498db;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #f4f7f6;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .topbar {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 99;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .page-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            padding: 5px;
+            border-radius: 4px;
+            background: #fff;
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .import-box {
+            border: 2px dashed #3498db;
+            padding: 40px;
+            text-align: center;
+            background: #f0f7ff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+        }
+
+        .btn-info {
+            background: #3498db;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        /* Modal Style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 1200px;
+            width: 95%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-body {
+            flex-grow: 1;
+            overflow: auto;
+            text-align: center;
+            position: relative;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #crop-wrapper {
+            position: relative;
+            display: inline-block;
+            transform-origin: 0 0;
+        }
+
+        #modal-img {
+            display: block;
+            max-width: none;
+        }
+
+        #crop-guide {
+            position: absolute;
+            border: 2px dashed #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+
+        /* Giao diện Loading */
+        #loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">Admin Panel</div>
+            <ul class="menu">
+                <li class="menu-item"><a href="index.html">🏠 Trang chủ</a></li>
+                <li class="menu-item active"><a href="khoi-n.html">🎵 Ngân hàng Khối N</a></li>
+                <li class="menu-item"><a href="tao-de-n.html">📄 Tạo đề thi Khối N</a></li>
+                <li class="menu-item"><a href="khoi-m.html">📚 Ngân hàng Khối M</a></li>
+                <li class="menu-item"><a href="tao-de-m.html">📝 Tạo đề thi Khối M</a></li>
+            </ul>
+            <div style="padding: 15px; background: #1a252f; text-align: center; margin-top: auto;">
+                <a onclick="handleLogout()"
+                    style="color: #e74c3c; cursor: pointer; font-weight: bold; text-decoration: none;">🚪 Đăng xuất</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="loading-overlay">
+                <div class="spinner"></div>
+                <div style="font-size: 18px; font-weight: bold; color: #2c3e50;">Đang xử lý dữ liệu...</div>
+            </div>
+
+            <header class="topbar">
+                <h3 id="topbar-title">Quản lý Ngân hàng Đề Khối N</h3>
+            </header>
+
+            <section class="content-area">
+                <div class="page-section">
+                    <div class="tab-container" style="border-bottom: 2px solid #ddd; margin-bottom: 20px;">
+                        <button class="tab-btn active" onclick="switchTab('list', this)"
+                            style="padding: 10px 20px; font-weight: bold; border: none; background: none; cursor: pointer; border-bottom: 3px solid #0056b3;">📋
+                            Danh sách mẫu</button>
+                        <button class="tab-btn" onclick="switchTab('import', this)"
+                            style="padding: 10px 20px; font-weight: bold; border: none; background: none; cursor: pointer;">📥
+                            Import từ Word</button>
+
+                        <button class="tab-btn" onclick="switchTab('note', this)"
+                            style="padding: 10px 20px; font-weight: bold; border: none; background: none; cursor: pointer;">📝
+                            Ghi chú Đề thi</button>
+                    </div>
+
+                    <div id="tab-list" class="tab-content">
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; background: #f0f7ff; padding: 15px; border-radius: 8px; border: 1px solid #b3d7ff;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <strong>Lọc phân loại:</strong>
+                                <select id="filter-cat" onchange="loadData()"
+                                    style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 15px;">
+                                    <option value="caodo_de">I. Cao độ dễ</option>
+                                    <option value="caodo_kho">I. Cao độ khó</option>
+                                    <option value="tiettau_de">II. Tiết tấu dễ</option>
+                                    <option value="tiettau_kho">II. Tiết tấu khó</option>
+                                </select>
+                            </div>
+                            <span id="stat-info" style="font-weight: bold; color: #0056b3;">Đang tải...</span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="8%" style="text-align: center;">Mã ID</th>
+                                    <th width="20%">Phân loại</th>
+                                    <th width="45%">Hình ảnh (Nội dung)</th>
+                                    <th width="12%" style="text-align: center;">
+                                        <label
+                                            style="cursor: pointer; display: flex; flex-direction: column; align-items: center;">
+                                            <input type="checkbox" id="check-all-thi"
+                                                onchange="toggleAllExams(this.checked)"
+                                                style="transform: scale(1.3); margin-bottom: 5px;">
+                                            <span style="font-size: 12px;">Chọn tất cả</span>
+                                        </label>
+                                    </th>
+                                    <th width="15%" style="text-align: center;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="tab-import" class="tab-content" style="display: none;">
+                        <div class="import-box">
+                            <input type="file" id="word-import-input" accept=".docx" style="display: none;"
+                                onchange="handleWordImport(this)">
+                            <button class="btn btn-info" onclick="document.getElementById('word-import-input').click()"
+                                style="padding: 15px 30px; font-size: 16px;">📂 Chọn file Word (.docx) mẫu đề khối
+                                N</button>
+                            <p style="margin-top: 15px; color: #666;">Hệ thống tự động tách hình ảnh, cắt lề trắng
+                                (Auto-Crop) và chia vào 4 phân loại mặc định.</p>
+                        </div>
+                    </div>
+
+                    <div id="tab-note" class="tab-content" style="display: none;">
+                        <div
+                            style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 10px 0; color: #27ae60;">Cấu hình Ghi chú chung cho Đề thi Khối N
+                            </h4>
+                            <p style="margin: 0; color: #333; font-size: 14px;">Phần ghi chú này (nếu có) sẽ được dùng
+                                để in ở cuối tờ giấy thi. Bạn có thể chèn lời nhắc nhở hoặc quy chế thi bằng văn bản và
+                                1 hình ảnh.</p>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #2c3e50;">Nội
+                                dung Ghi chú (Văn bản):</label>
+                            <textarea id="note-text" rows="4"
+                                style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 14px; box-sizing: border-box;"
+                                placeholder="Ví dụ: Thí sinh không được sử dụng tài liệu. Nộp lại đề thi sau khi hết giờ..."></textarea>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #2c3e50;">Ảnh
+                                đính kèm (Tùy chọn):</label>
+                            <input type="file" id="note-image-input" accept="image/*" style="display: none;"
+                                onchange="handleNoteImageSelect(event)">
+                            <div onclick="document.getElementById('note-image-input').click()"
+                                style="border: 2px dashed #3498db; padding: 20px; text-align: center; background: #ebf5fb; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: 0.3s;">
+                                <div style="font-size: 24px; margin-bottom: 5px;">📸</div>
+                                <strong style="color: #2980b9;">Nhấp chuột để chọn Ảnh Ghi Chú</strong>
+                            </div>
+
+                            <div id="note-image-preview" style="text-align: center; min-height: 50px;"></div>
+                        </div>
+
+                        <div
+                            style="text-align: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
+                            <button class="btn btn-success" onclick="saveNoteSettings()"
+                                style="padding: 12px 30px; font-size: 16px;">💾 Lưu Ghi Chú</button>
+                            <button class="btn btn-danger" onclick="clearNoteSettings()"
+                                style="padding: 12px 30px; font-size: 16px; margin-left: 15px;">🗑️ Xóa Trắng</button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="crop-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Cắt ảnh mẫu: #<span id="modal-id"></span></h3>
+                <div>
+                    <button class="btn" style="background: #f39c12; margin-right: 10px;" onclick="resetCropGuide()">[ ]
+                        Chọn toàn ảnh</button>
+                    <button class="btn" style="background: #95a5a6; margin-right: 10px;" onclick="handleZoom(-0.2)">➖
+                        Thu nhỏ</button>
+                    <span id="zoom-level"
+                        style="font-weight: bold; margin-right: 10px; display: inline-block; width: 50px;">100%</span>
+                    <button class="btn" style="background: #95a5a6; margin-right: 15px;" onclick="handleZoom(0.2)">➕
+                        Phóng to</button>
+                    <button class="btn btn-success" onclick="saveCroppedImage()">✂️ Cắt và Lưu đè</button>
+                    <button class="btn btn-danger" style="margin-left: 10px;" onclick="closeModal()">Đóng</button>
+                </div>
+            </div>
+            <div class="modal-body" id="modal-body" style="display: block; text-align: center;">
+                <div id="crop-wrapper">
+                    <img id="modal-img" src="" draggable="false">
+                    <div id="crop-guide"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const bankDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
+
+        let currentEdit = { catKey: '', id: null };
+
+        let isDragging = false;
+        let startX, startY;
+        let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+        // CÁC BIẾN GHI NHỚ KHUNG CẮT
+        let lastCropX = null;
+        let lastCropY = null;
+        let lastCropW = null; // Thêm biến nhớ chiều rộng
+        let lastCropH = null; // Thêm biến nhớ chiều cao
+
+        let currentZoom = 1;
+        const zoomStep = 0.2;
+        let originalImg = new Image();
+
+        // Biến lưu ảnh Ghi chú tạm thời
+        let currentNoteImageBase64 = null;
+
+        // window.onload = () => {
+        //     if (typeof checkLogin === 'function') checkLogin();
+
+        //     const savedFilter = sessionStorage.getItem('khoiN_filter');
+        //     if (savedFilter) {
+        //         document.getElementById('filter-cat').value = savedFilter;
+        //     } else {
+        //         document.getElementById('filter-cat').value = 'caodo_de';
+        //     }
+
+        //     loadData();
+        //     initCropEvents();
+        // };
+
+        window.onload = () => { 
+            if (typeof checkLogin === 'function') checkLogin(); 
+
+            // Phục hồi bộ lọc cũ (nếu có)
+            const savedFilter = sessionStorage.getItem('khoiN_filter');
+            if (savedFilter) {
+                document.getElementById('filter-cat').value = savedFilter;
+            } else {
+                document.getElementById('filter-cat').value = 'caodo_de';
+            }
+
+            // Tự động kích hoạt Tab 1 (Danh sách) ngay khi mở trang. 
+            // Lưu ý: Hàm switchTab này sẽ tự động gọi luôn hàm loadData() ở bên trong nó.
+            switchTab('list', document.querySelectorAll('.tab-btn')[0]);
+            
+            // Khởi tạo các sự kiện cho công cụ cắt ảnh
+            initCropEvents();
+        };
+
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottom = "none"; b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            btn.classList.add('active'); btn.style.borderBottom = "3px solid #0056b3";
+            document.getElementById('tab-' + tab).style.display = 'block';
+
+            if (tab === 'list') { loadData(); }
+            if (tab === 'note') { loadNoteSettings(); } // Tải dữ liệu ghi chú khi mở tab 3
+        }
+
+        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+        // ==========================================
+        // KHU VỰC CHỨC NĂNG TAB 3 (GHI CHÚ ĐỀ THI)
+        // ==========================================
+        async function loadNoteSettings() {
+            try {
+                let noteData = await bankDB.getItem('exam_note');
+                if (noteData) {
+                    document.getElementById('note-text').value = noteData.text || '';
+                    currentNoteImageBase64 = noteData.image || null;
+                } else {
+                    document.getElementById('note-text').value = '';
+                    currentNoteImageBase64 = null;
+                }
+                renderNoteImagePreview();
+            } catch (e) {
+                console.error("Lỗi tải ghi chú:", e);
+            }
+        }
+
+        function handleNoteImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentNoteImageBase64 = e.target.result;
+                renderNoteImagePreview();
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Reset input để chọn lại file cũ nếu muốn
+        }
+
+        function renderNoteImagePreview() {
+            const previewDiv = document.getElementById('note-image-preview');
+            if (currentNoteImageBase64) {
+                previewDiv.innerHTML = `
+                    <div style="position: relative; display: inline-block; border: 1px solid #ccc; padding: 5px; border-radius: 5px; background: white; margin-top: 10px;">
+                        <button onclick="removeNoteImage()" title="Xóa ảnh này" style="position: absolute; top: -10px; right: -10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">X</button>
+                        <img src="${currentNoteImageBase64}" style="max-width: 100%; max-height: 250px; display: block; border-radius: 4px;">
+                    </div>
+                `;
+            } else {
+                previewDiv.innerHTML = '<span style="color: #95a5a6; font-style: italic;">Chưa có ảnh nào được chọn.</span>';
+            }
+        }
+
+        function removeNoteImage() {
+            currentNoteImageBase64 = null;
+            renderNoteImagePreview();
+        }
+
+        async function saveNoteSettings() {
+            const text = document.getElementById('note-text').value.trim();
+            try {
+                await bankDB.setItem('exam_note', {
+                    text: text,
+                    image: currentNoteImageBase64
+                });
+                alert("✅ Đã lưu cấu hình Ghi chú thành công!");
+            } catch (e) {
+                alert("Lỗi khi lưu ghi chú: " + e);
+            }
+        }
+
+        async function clearNoteSettings() {
+            if (confirm("Bạn có chắc muốn xóa toàn bộ nội dung chữ và ảnh của phần Ghi chú này?")) {
+                document.getElementById('note-text').value = '';
+                currentNoteImageBase64 = null;
+                renderNoteImagePreview();
+                await bankDB.removeItem('exam_note');
+            }
+        }
+
+        // ==========================================
+        // KHU VỰC TAB 1 & 2 CŨ GIỮ NGUYÊN HOẠT ĐỘNG
+        // ==========================================
+        async function loadData() {
+            const filterKey = document.getElementById('filter-cat').value;
+            sessionStorage.setItem('khoiN_filter', filterKey);
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            let items = await bankDB.getItem(filterKey) || [];
+
+            document.getElementById('stat-info').innerText = `Tổng số: ${items.length} mẫu`;
+
+            // Xử lý Checkbox Chọn tất cả
+            const checkAllBtn = document.getElementById('check-all-thi');
+            if (items.length > 0) {
+                const allSelected = items.every(i => i.isSelected === true);
+                checkAllBtn.checked = allSelected;
+            } else {
+                checkAllBtn.checked = false;
+            }
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px; color:#666;">Chưa có dữ liệu phần này. Hãy Import từ file Word.</td></tr>';
+                return;
+            }
+
+            items.sort((a, b) => a.id - b.id);
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${item.id}`;
+                tr.innerHTML = `
+                    <td style="text-align:center; font-weight:bold; color: #2c3e50; font-size: 16px;">${item.id}</td>
+                    <td style="font-weight: bold; color: #333;">${getCatName(filterKey)}</td>
+                    <td><img src="${item.imgData}" class="image-preview" onclick="openCropModal('${filterKey}', ${item.id})" style="cursor: pointer;" title="Nhấp để thu phóng và cắt ảnh"></td>
+                    <td style="text-align: center;">
+                        <input type="checkbox" style="transform: scale(1.5); cursor:pointer;" ${item.isSelected ? 'checked' : ''} onchange="updateSel('${filterKey}', ${item.id}, this.checked)">
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-info" onclick="openCropModal('${filterKey}', ${item.id})">Cắt</button>
+                        <button class="btn btn-danger" onclick="delItem('${filterKey}', ${item.id})">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function toggleAllExams(isChecked) {
+            const filterKey = document.getElementById('filter-cat').value;
+            let items = await bankDB.getItem(filterKey) || [];
+            if (items.length === 0) return;
+
+            items.forEach(item => item.isSelected = isChecked);
+            await bankDB.setItem(filterKey, items);
+            loadData();
+        }
+
+        function getCatName(key) {
+            const map = { 'caodo_de': 'I. Cao độ dễ', 'caodo_kho': 'I. Cao độ khó', 'tiettau_de': 'II. Tiết tấu dễ', 'tiettau_kho': 'II. Tiết tấu khó' };
+            return map[key] || key;
+        }
+
+        async function updateSel(cat, id, val) {
+            let items = await bankDB.getItem(cat) || [];
+            let i = items.find(x => x.id === id);
+            if (i) i.isSelected = val;
+            await bankDB.setItem(cat, items);
+
+            // Check lại nút All
+            const checkAllBtn = document.getElementById('check-all-thi');
+            const allSelected = items.every(x => x.isSelected === true);
+            checkAllBtn.checked = allSelected;
+        }
+
+        async function delItem(cat, id) {
+            if (!confirm("Xóa mẫu này?")) return;
+            let items = await bankDB.getItem(cat) || [];
+            await bankDB.setItem(cat, items.filter(x => x.id !== id));
+            loadData();
+        }
+
+        function handleWordImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            showLoading();
+
+            setTimeout(() => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    mammoth.convertToHtml({ arrayBuffer: e.target.result }).then(async result => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = result.value;
+                        await extractAndSaveImages(tempDiv);
+                    }).catch(err => {
+                        hideLoading();
+                        alert("Lỗi đọc Word: " + err.message);
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+                input.value = '';
+            }, 100);
+        }
+
+        async function extractAndSaveImages(container) {
+            const imgs = container.querySelectorAll('img');
+            if (imgs.length === 0) {
+                hideLoading();
+                return alert("Không tìm thấy ảnh nào trong file Word!");
+            }
+
+            let dataObj = { 'caodo_de': [], 'caodo_kho': [], 'tiettau_de': [], 'tiettau_kho': [] };
+
+            for (let catKey in dataObj) {
+                let existing = await bankDB.getItem(catKey) || [];
+                dataObj[catKey] = existing;
+            }
+
+            let allKeys = Object.keys(dataObj);
+            let maxId = 0;
+            for (let catKey of allKeys) {
+                let items = dataObj[catKey];
+                if (items.length > 0) {
+                    let localMax = Math.max(...items.map(i => i.id));
+                    if (localMax > maxId) maxId = localMax;
+                }
+            }
+
+            let perCat = Math.ceil(imgs.length / 4);
+            let currentCatIndex = 0;
+            let countInCat = 0;
+
+            for (let i = 0; i < imgs.length; i++) {
+                let cleanBase64 = await autoCropImage(imgs[i].src);
+
+                maxId++;
+                let targetCat = allKeys[currentCatIndex];
+
+                dataObj[targetCat].push({
+                    id: maxId,
+                    imgData: cleanBase64,
+                    isSelected: true // Mặc định Chọn Thi
+                });
+
+                countInCat++;
+                if (countInCat >= perCat && currentCatIndex < 3) {
+                    currentCatIndex++;
+                    countInCat = 0;
+                }
+            }
+
+            for (let catKey in dataObj) {
+                await bankDB.setItem(catKey, dataObj[catKey]);
+            }
+
+            hideLoading();
+            alert(`✅ Đã bóc tách và tự động cắt lề ${imgs.length} ảnh vào Ngân hàng!`);
+            switchTab('list', document.querySelectorAll('.tab-btn')[0]);
+        }
+
+        function autoCropImage(base64Src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imgData.data;
+
+                    let top = 0, bottom = canvas.height, left = 0, right = canvas.width;
+
+                    scanTop: for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            const alpha = data[(y * canvas.width + x) * 4 + 3];
+                            const r = data[(y * canvas.width + x) * 4];
+                            if (alpha > 0 && r < 200) { top = y; break scanTop; }
+                        }
+                    }
+
+                    scanBottom: for (let y = canvas.height - 1; y >= 0; y--) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            const alpha = data[(y * canvas.width + x) * 4 + 3];
+                            const r = data[(y * canvas.width + x) * 4];
+                            if (alpha > 0 && r < 200) { bottom = y; break scanBottom; }
+                        }
+                    }
+
+                    scanLeft: for (let x = 0; x < canvas.width; x++) {
+                        for (let y = 0; y < canvas.height; y++) {
+                            const alpha = data[(y * canvas.width + x) * 4 + 3];
+                            const r = data[(y * canvas.width + x) * 4];
+                            if (alpha > 0 && r < 200) { left = x; break scanLeft; }
+                        }
+                    }
+
+                    scanRight: for (let x = canvas.width - 1; x >= 0; x--) {
+                        for (let y = 0; y < canvas.height; y++) {
+                            const alpha = data[(y * canvas.width + x) * 4 + 3];
+                            const r = data[(y * canvas.width + x) * 4];
+                            if (alpha > 0 && r < 200) { right = x; break scanRight; }
+                        }
+                    }
+
+                    const pad = 5;
+                    const cropW = Math.max(1, (right - left) + pad * 2);
+                    const cropH = Math.max(1, (bottom - top) + pad * 2);
+
+                    const finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = cropW;
+                    finalCanvas.height = cropH;
+                    const fCtx = finalCanvas.getContext('2d');
+
+                    fCtx.fillStyle = '#ffffff';
+                    fCtx.fillRect(0, 0, cropW, cropH);
+                    fCtx.drawImage(img, left - pad, top - pad, cropW, cropH, 0, 0, cropW, cropH);
+
+                    resolve(finalCanvas.toDataURL('image/png', 1.0));
+                };
+                img.src = base64Src;
+            });
+        }
+
+        // ======================= MODAL CROP THỦ CÔNG ==========================
+        function initCropEvents() {
+            const wrapper = document.getElementById('crop-wrapper');
+            const guide = document.getElementById('crop-guide');
+
+            wrapper.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                const rect = wrapper.getBoundingClientRect();
+                startX = (e.clientX - rect.left) / currentZoom;
+                startY = (e.clientY - rect.top) / currentZoom;
+
+                cropRect = { x: startX, y: startY, w: 0, h: 0 };
+                updateGuideDisplay();
+                guide.style.display = 'block';
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const rect = wrapper.getBoundingClientRect();
+                let currentX = (e.clientX - rect.left) / currentZoom;
+                let currentY = (e.clientY - rect.top) / currentZoom;
+
+                cropRect.x = Math.min(startX, currentX);
+                cropRect.y = Math.min(startY, currentY);
+                cropRect.w = Math.abs(currentX - startX);
+                cropRect.h = Math.abs(currentY - startY);
+                updateGuideDisplay();
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+
+        function updateGuideDisplay() {
+            const guide = document.getElementById('crop-guide');
+            guide.style.left = cropRect.x + 'px';
+            guide.style.top = cropRect.y + 'px';
+            guide.style.width = cropRect.w + 'px';
+            guide.style.height = cropRect.h + 'px';
+        }
+
+        function resetCropGuide() {
+            if (!originalImg.src) return;
+            cropRect = { x: 0, y: 0, w: originalImg.width, h: originalImg.height };
+            updateGuideDisplay();
+            document.getElementById('crop-guide').style.display = 'block';
+        }
+
+        function handleZoom(delta) {
+            currentZoom += delta;
+            if (currentZoom < 0.2) currentZoom = 0.2;
+            if (currentZoom > 3.0) currentZoom = 3.0;
+
+            document.getElementById('zoom-level').innerText = Math.round(currentZoom * 100) + '%';
+            document.getElementById('crop-wrapper').style.transform = `scale(${currentZoom})`;
+
+            const body = document.getElementById('modal-body');
+            body.scrollLeft = 0; body.scrollTop = 0;
+        }
+
+        async function openCropModal(catKey, id) {
+            currentEdit = { catKey, id };
+            let items = await bankDB.getItem(catKey) || [];
+            let item = items.find(x => x.id === id);
+            if (!item) return;
+
+            document.getElementById('modal-id').innerText = id;
+            const imgEl = document.getElementById('modal-img');
+
+            originalImg.onload = () => {
+                imgEl.src = originalImg.src;
+                currentZoom = 1;
+                handleZoom(0);
+                
+                // KHÔI PHỤC VỊ TRÍ VÀ KÍCH THƯỚC CŨ
+                if (lastCropX !== null && lastCropY !== null && lastCropW !== null && lastCropH !== null) {
+                    // Chốt chặn an toàn: Tránh việc khung nhớ lọt ra ngoài viền nếu ảnh mới nhỏ hơn ảnh cũ
+                    let safeX = Math.min(lastCropX, originalImg.width);
+                    let safeY = Math.min(lastCropY, originalImg.height);
+                    let safeW = Math.min(lastCropW, originalImg.width - safeX);
+                    let safeH = Math.min(lastCropH, originalImg.height - safeY);
+
+                    cropRect = { x: safeX, y: safeY, w: safeW, h: safeH };
+                    
+                    updateGuideDisplay();
+                    document.getElementById('crop-guide').style.display = 'block';
+                } else {
+                    // Mặc định bọc nguyên toàn ảnh khi mở lần đầu tiên
+                    resetCropGuide();
+                }
+                
+                document.getElementById('crop-modal').style.display = 'flex';
+            };
+            originalImg.src = item.imgData;
+        }
+
+        function closeModal() {
+            document.getElementById('crop-modal').style.display = 'none';
+        }
+
+        async function saveCroppedImage() {
+            if (cropRect.w <= 10 || cropRect.h <= 10) {
+                return alert("Vui lòng kéo thả chuột trên ảnh để chọn vùng cần cắt (Hoặc bấm [Chọn toàn ảnh])!");
+            }
+
+            // LƯU LẠI CẢ VỊ TRÍ VÀ KÍCH THƯỚC CHO LẦN SAU
+            lastCropX = cropRect.x;
+            lastCropY = cropRect.y;
+            lastCropW = cropRect.w;
+            lastCropH = cropRect.h;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = cropRect.w;
+            canvas.height = cropRect.h;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImg, cropRect.x, cropRect.y, cropRect.w, cropRect.h, 0, 0, cropRect.w, cropRect.h);
+
+            const newBase64 = canvas.toDataURL('image/png', 1.0);
+
+            let items = await bankDB.getItem(currentEdit.catKey) || [];
+            let itemIdx = items.findIndex(x => x.id === currentEdit.id);
+
+            if (itemIdx !== -1) {
+                items[itemIdx].imgData = newBase64;
+                await bankDB.setItem(currentEdit.catKey, items);
+
+                closeModal();
+                await loadData();
+
+                // Cuộn và highlight dòng vừa sửa
+                const row = document.getElementById(`row-${currentEdit.id}`);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.style.transition = 'background 0.5s';
+                    row.style.background = '#d4edda';
+                    setTimeout(() => { row.style.background = 'transparent'; }, 2000);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

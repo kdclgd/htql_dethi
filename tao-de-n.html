@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Đề Thi Khối N - Quản Lý Theo Suất</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="libs/localforage.min.js"></script>
+    <script src="libs/html-docx.js"></script>
+    <script src="js/main.js"></script>
+    <style>
+        /* BỐ CỤC CHUNG */
+        body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 250px; min-width: 250px; background: #2c3e50; height: 100%; color: white; display: flex; flex-direction: column; z-index: 1000; }
+        .sidebar-header { padding: 20px; background: #1a252f; text-align: center; font-weight: bold; font-size: 18px; }
+        .menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; }
+        .menu-item a { color: white; text-decoration: none; padding: 15px 20px; display: block; transition: 0.3s; }
+        .menu-item a:hover, .menu-item.active a { background: #34495e; border-left: 4px solid #3498db; }
+        
+        /* MAIN CONTENT */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; background: #f4f7f6; overflow: hidden; }
+        .topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 99; }
+        .content-area { flex-grow: 1; padding: 20px; overflow-y: auto; background: #eef2f5;}
+
+        .page-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; font-weight: bold; }
+
+        /* FORM TẠO ĐỀ HÀNG LOẠT */
+        .batch-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; }
+
+        /* GIAO DIỆN KHỔ GIẤY A4 (PREVIEW) */
+        .a4-preview {
+            background: white; width: 210mm; min-height: 297mm; padding: 15mm;
+            margin: 0 auto 30px auto; box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            font-family: 'Times New Roman', Times, serif; font-size: 14pt; line-height: 1.5;
+            box-sizing: border-box; color: black;
+            page-break-after: always; position: relative;
+        }
+        .a4-preview:last-child { page-break-after: auto; margin-bottom: 0; }
+        .a4-preview img { max-width: 100%; height: auto; display: block; margin-top: 5px; margin-bottom: 15px; }
+        
+        /* CSS ẨN UI KHI IN */
+        @media print {
+            body * { visibility: hidden; }
+            #preview-section, #preview-section * { visibility: visible; }
+            #preview-section { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            .a4-preview { box-shadow: none; margin: 0; padding: 10mm; width: 100%; min-height: auto; }
+            .no-print { display: none !important; }
+        }
+        
+        .btn { cursor: pointer; border: none; border-radius: 4px; font-weight: bold; padding: 8px 15px; transition: 0.2s; }
+        .btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar no-print">
+            <div class="sidebar-header">Admin Panel</div>
+            <ul class="menu">
+                <li class="menu-item"><a href="index.html">🏠 Trang chủ</a></li>
+                <li class="menu-item"><a href="khoi-n.html">🎵 Ngân hàng Khối N</a></li>
+                <li class="menu-item active"><a href="tao-de-n.html">📄 Tạo đề thi Khối N</a></li>
+                <li class="menu-item"><a href="khoi-m.html">📚 Ngân hàng Khối M</a></li>
+                <li class="menu-item"><a href="tao-de-m.html">📝 Tạo đề thi Khối M</a></li>
+            </ul>
+            <div style="padding: 15px; background: #1a252f; text-align: center; margin-top: auto;">
+                <a onclick="handleLogout()" style="color: #e74c3c; cursor: pointer; font-weight: bold; text-decoration: none;">🚪 Đăng xuất</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar no-print"><h3 id="topbar-title">Quản lý & Trộn Đề Thi Khối N</h3></header>
+            
+            <section class="content-area">
+                <div class="page-section no-print" style="margin-bottom: 20px;" id="manager-section">
+                    <div class="tab-container" style="border-bottom: 2px solid #ddd; margin-bottom: 20px;">
+                        <button class="tab-btn active" onclick="switchTab('list', this)" style="padding: 10px 20px; font-weight: bold; border: none; background: none; cursor: pointer; border-bottom: 3px solid #0056b3;">📋 Danh sách Đề theo Suất thi</button>
+                        <button class="tab-btn" onclick="switchTab('create', this)" style="padding: 10px 20px; font-weight: bold; border: none; background: none; cursor: pointer;">🎲 Khởi tạo Đợt thi mới</button>
+                    </div>
+
+                    <div id="tab-list" class="tab-content">
+                        <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border: 1px solid #b3d7ff; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <strong style="white-space: nowrap;">Lọc theo Suất thi:</strong>
+                            <select id="filter-suat-thi" onchange="renderExamsTable()" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; flex-grow: 1; font-size: 15px; min-width: 250px;">
+                            </select>
+                            
+                            <button class="btn" onclick="editBatchExamName()" style="background: #f39c12; color: white;">✏️ Sửa Tên Kỳ Thi</button>
+                            <button class="btn" onclick="viewSelectedExams()" style="background: #27ae60; color: white;">🖨️ In / Xuất Word các đề ĐÃ CHỌN</button>
+                            <button class="btn" onclick="deleteBatch()" style="background: #e74c3c; color: white; white-space: nowrap;">🗑️ Xóa toàn bộ Suất này</button>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="5%" style="text-align: center;">
+                                        <input type="checkbox" id="check-all" onchange="toggleAllExams(this.checked)" style="transform: scale(1.2); cursor: pointer;">
+                                    </th>
+                                    <th width="10%" style="text-align: center;">Mã Đề</th>
+                                    <th width="10%">Ngày thi</th>
+                                    <th width="8%">Buổi</th>
+                                    <th width="35%">Suất thi / Tên Kỳ thi</th>
+                                    <th width="20%" style="text-align: center;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exam-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="tab-create" class="tab-content" style="display: none;">
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 10px 0; color: #27ae60;">Thông tin cấu trúc tự động (ĐÃ TỐI ƯU ID):</h4>
+                            <p style="margin: 0; color: #333; font-size: 14px;">Hệ thống sẽ lấy ngẫu nhiên <strong>2 Cao độ dễ, 2 Cao độ khó, 2 Tiết tấu dễ, 2 Tiết tấu khó</strong> từ Ngân hàng. CSDL giờ chỉ lưu ID liên kết, giúp máy tính hoạt động cực nhanh.</p>
+                        </div>
+                        
+                        <div class="batch-form">
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Tên kỳ thi (Tiêu đề):</label>
+                                <input type="text" id="ten-ky-thi" value="ĐỀ THI ĐÁNH GIÁ NĂNG LỰC NĂM 2026" placeholder="Nhập tiêu đề kỳ thi...">
+                            </div>
+
+                            <div class="form-group" style="grid-column: 1 / -1; background: #fcf8e3; padding: 10px 15px; border-radius: 6px; border: 1px solid #faebcc;">
+                                <label style="display: flex; align-items: center; cursor: pointer; color: #8a6d3b; margin: 0;">
+                                    <input type="checkbox" id="kem-ghi-chu" style="width: auto; margin-right: 10px; transform: scale(1.3);" checked>
+                                    <span style="font-size: 15px;">In kèm <strong>Ghi chú chung</strong> vào đề thi (Nội dung đã được cài đặt bên phần Ngân hàng)</span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Ngày thi:</label>
+                                <input type="date" id="ngay-thi" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Buổi thi:</label>
+                                <select id="buoi-thi">
+                                    <option value="Sáng">Sáng</option>
+                                    <option value="Chiều">Chiều</option>
+                                    <option value="Tối">Tối</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Suất thi (Ca thi):</label>
+                                <input type="text" id="suat-thi" placeholder="VD: Ca 1, Ca 2, Đợt 1..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Số lượng đề cần tạo:</label>
+                                <input type="number" id="so-luong-de" min="1" value="10" required>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn" onclick="generateExamBatch()" style="padding: 12px 30px; font-size: 16px; background: #2980b9; color: white;">🚀 Tiến hành trộn và Tạo bộ đề</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="preview-section" style="display: none;">
+                    <div class="no-print" style="text-align: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100;">
+                        <button class="btn" onclick="closePreview()" style="background: #95a5a6; color: white; margin-right: 10px;">⬅️ Quay lại</button>
+                        
+                        <button id="btn-regenerate-single" class="btn" onclick="regenerateCurrentExam()" style="background: #f39c12; color: white; margin-right: 10px; display: none;">🔄 Tạo lại đề này</button>
+                        
+                        <button class="btn" onclick="printExam()" style="background: #27ae60; color: white; margin-right: 10px;">🖨️ In / Xuất PDF</button>
+                        <button class="btn" onclick="exportToWord()" style="background: #2980b9; color: white;">💾 Xuất ra file Word (.doc)</button>
+                    </div>
+                    
+                    <div id="exam-preview-container">
+                        </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const bankDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
+        const examDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_n" });
+
+        let allExams = [];
+        let exportFileName = "De_Thi_Khoi_N.doc";
+        let currentSingleExamId = null; 
+
+        // window.onload = () => { 
+        //     if(typeof checkLogin === 'function') checkLogin(); 
+        //     document.getElementById('ngay-thi').valueAsDate = new Date();
+        //     loadExams(); 
+        // };
+        window.onload = () => { 
+            if(typeof checkLogin === 'function') checkLogin(); 
+            document.getElementById('ngay-thi').valueAsDate = new Date();
+            
+            // Tự động bật sáng và hiển thị nội dung của Tab 1 (Danh sách)
+            switchTab('list', document.querySelectorAll('.tab-btn')[0]);
+            
+            // Gọi hàm tải dữ liệu
+            loadExams(); 
+        };
+
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottom = "none"; });
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            btn.style.borderBottom = "3px solid #0056b3";
+            document.getElementById('tab-' + tab).style.display = 'block';
+            document.getElementById('preview-section').style.display = 'none';
+            document.getElementById('manager-section').style.display = 'block';
+        }
+
+        function formatDate(dateStr) {
+            if(!dateStr) return "";
+            const parts = dateStr.split('-');
+            return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+        }
+
+        // --- 1. LOAD DỮ LIỆU & DROPDOWN ---
+        async function loadExams() {
+            allExams = await examDB.getItem('list') || [];
+            allExams.sort((a,b) => b.timestamp - a.timestamp);
+
+            const filterDropdown = document.getElementById('filter-suat-thi');
+            const currentSelection = filterDropdown.value; 
+            
+            const uniqueBatches = [...new Set(allExams.map(e => `${formatDate(e.ngayThi)} | ${e.buoiThi} | ${e.suatThi}`))];
+            
+            filterDropdown.innerHTML = '<option value="all">=== Xem tất cả các suất thi ===</option>';
+            uniqueBatches.forEach(batch => {
+                const opt = document.createElement('option');
+                opt.value = batch;
+                opt.innerText = `Ngày: ${batch}`;
+                filterDropdown.appendChild(opt);
+            });
+
+            if(uniqueBatches.includes(currentSelection)) {
+                filterDropdown.value = currentSelection;
+            } else if (uniqueBatches.length > 0) {
+                filterDropdown.value = uniqueBatches[0];
+            }
+
+            renderExamsTable();
+        }
+
+        function renderExamsTable() {
+            const filter = document.getElementById('filter-suat-thi').value;
+            const tbody = document.getElementById('exam-table-body');
+            tbody.innerHTML = '';
+            document.getElementById('check-all').checked = false;
+
+            let filtered = allExams;
+            if (filter !== 'all') {
+                filtered = allExams.filter(e => `${formatDate(e.ngayThi)} | ${e.buoiThi} | ${e.suatThi}` === filter);
+                filtered.sort((a, b) => parseInt(a.name) - parseInt(b.name));
+            }
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: #666; padding: 20px;">Không có mã đề nào.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(exam => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="exam-checkbox" value="${exam.id}" style="transform: scale(1.2); cursor: pointer;">
+                    </td>
+                    <td style="font-weight:bold; text-align: center; color: #2c3e50; font-size: 16px;">${exam.name}</td>
+                    <td>${formatDate(exam.ngayThi)}</td>
+                    <td>${exam.buoiThi}</td>
+                    <td>
+                        <strong style="color: #e67e22;">${exam.suatThi}</strong><br>
+                        <span style="font-size: 12px; color: #7f8c8d;">${exam.tenKyThi || 'ĐỀ THI ĐÁNH GIÁ NĂNG LỰC NĂM 2026'}</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn" onclick="viewSingleExam('${exam.id}')" style="background: #3498db; color: white; padding: 6px 12px; margin-right: 5px;">Xem / In lẻ</button>
+                        <button class="btn" onclick="deleteExam('${exam.id}')" style="background: #e74c3c; color: white; padding: 6px 12px;">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleAllExams(isChecked) {
+            document.querySelectorAll('.exam-checkbox').forEach(cb => cb.checked = isChecked);
+        }
+
+        // --- SỬA TÊN KỲ THI HÀNG LOẠT ---
+        async function editBatchExamName() {
+            const filter = document.getElementById('filter-suat-thi').value;
+            
+            if (filter === 'all') {
+                return alert("Vui lòng chọn 1 Suất thi cụ thể trong danh sách thả xuống để sửa tên!");
+            }
+
+            const sampleExam = allExams.find(e => `${formatDate(e.ngayThi)} | ${e.buoiThi} | ${e.suatThi}` === filter);
+            if (!sampleExam) return;
+
+            const currentName = sampleExam.tenKyThi || "ĐỀ THI ĐÁNH GIÁ NĂNG LỰC NĂM 2026";
+            const newName = prompt(`Nhập Tên kỳ thi (Tiêu đề) mới cho suất [${filter}]:`, currentName);
+
+            if (newName !== null && newName.trim() !== "") {
+                const finalName = newName.trim();
+                allExams.forEach(e => {
+                    if (`${formatDate(e.ngayThi)} | ${e.buoiThi} | ${e.suatThi}` === filter) {
+                        e.tenKyThi = finalName;
+                    }
+                });
+
+                await examDB.setItem('list', allExams);
+                alert("Đã cập nhật Tên kỳ thi thành công!");
+                loadExams();
+            }
+        }
+
+        // --- 2. TẠO ĐỀ HÀNG LOẠT ---
+        async function generateExamBatch() {
+            const tenKyThi = document.getElementById('ten-ky-thi').value.trim();
+            const kemGhiChu = document.getElementById('kem-ghi-chu').checked; // Lấy giá trị checkbox Ghi chú
+            const ngayThi = document.getElementById('ngay-thi').value;
+            const buoiThi = document.getElementById('buoi-thi').value;
+            const suatThi = document.getElementById('suat-thi').value.trim();
+            const soLuong = parseInt(document.getElementById('so-luong-de').value);
+
+            if(!tenKyThi || !ngayThi || !suatThi || isNaN(soLuong) || soLuong < 1) return alert("Lỗi: Vui lòng nhập đầy đủ thông tin (Bao gồm Tên kỳ thi)!");
+
+            async function getAndPick(category, count, categoryNameStr) {
+                let items = await bankDB.getItem(category) || [];
+                let validItems = items.filter(i => i.isSelected);
+                if(validItems.length < count) {
+                    throw new Error(`Phần [${categoryNameStr}] chỉ có ${validItems.length} mẫu được "Chọn thi". Cần ít nhất ${count} mẫu để tạo đề.`);
+                }
+                return validItems.sort(() => 0.5 - Math.random()).slice(0, count).map(i => ({ id: i.id, cat: category }));
+            }
+
+            try {
+                let examsList = await examDB.getItem('list') || [];
+                const batchStamp = Date.now();
+
+                for (let i = 1; i <= soLuong; i++) {
+                    const cd_de = await getAndPick('caodo_de', 2, 'Cao độ dễ');
+                    const cd_kho = await getAndPick('caodo_kho', 2, 'Cao độ khó');
+                    const tt_de = await getAndPick('tiettau_de', 2, 'Tiết tấu dễ');
+                    const tt_kho = await getAndPick('tiettau_kho', 2, 'Tiết tấu khó');
+
+                    const newExam = {
+                        id: `EXAM_${batchStamp}_${i}`,
+                        name: i.toString(),
+                        tenKyThi: tenKyThi,
+                        ngayThi: ngayThi, 
+                        buoiThi: buoiThi, 
+                        suatThi: suatThi,
+                        timestamp: batchStamp + i,
+                        includeNote: kemGhiChu, // Lưu trạng thái có cần Ghi chú hay không
+                        data: {
+                            caodo: [cd_de[0], cd_de[1], cd_kho[0], cd_kho[1]],
+                            tiettau: [tt_de[0], tt_de[1], tt_kho[0], tt_kho[1]]
+                        }
+                    };
+                    examsList.push(newExam);
+                }
+
+                await examDB.setItem('list', examsList);
+                alert(`Thành công! Đã tạo ra ${soLuong} mã đề thi.`);
+                
+                switchTab('list', document.querySelectorAll('.tab-btn')[0]);
+                await loadExams();
+                document.getElementById('filter-suat-thi').value = `${formatDate(ngayThi)} | ${buoiThi} | ${suatThi}`;
+                renderExamsTable();
+
+            } catch (error) {
+                alert("LỖI:\n" + error.message + "\n\nQua trang Quản lý Khối N bật thêm mẫu thi!");
+            }
+        }
+
+        // --- 3. RENDER GIAO DIỆN & TẠO LẠI ĐỀ CHỈ ĐỊNH ---
+
+        async function viewSingleExam(examId) {
+            const exam = allExams.find(e => e.id === examId);
+            if(!exam) return;
+            
+            document.getElementById('btn-regenerate-single').style.display = 'inline-block';
+            currentSingleExamId = examId; 
+            
+            exportFileName = `De_${exam.name}N_${exam.suatThi.replace(/\s+/g, '_')}.doc`;
+            await renderPreview([exam]);
+        }
+
+        async function viewSelectedExams() {
+            const checkboxes = document.querySelectorAll('.exam-checkbox:checked');
+            if (checkboxes.length === 0) return alert("Vui lòng tick chọn ít nhất 1 đề thi!");
+
+            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+            const selectedExams = allExams.filter(e => selectedIds.includes(e.id));
+            selectedExams.sort((a, b) => parseInt(a.name) - parseInt(b.name)); 
+
+            document.getElementById('btn-regenerate-single').style.display = 'none';
+            currentSingleExamId = null;
+
+            exportFileName = `Bo_De_${selectedExams[0].suatThi.replace(/\s+/g, '_')}_Gom_${selectedExams.length}_De.doc`;
+            await renderPreview(selectedExams);
+        }
+
+        async function regenerateCurrentExam() {
+            if(!currentSingleExamId) return;
+            if(!confirm("Bạn có chắc muốn bốc ngẫu nhiên LẠI các câu hỏi cho mã đề này không?")) return;
+
+            async function getAndPick(category, count, categoryNameStr) {
+                let items = await bankDB.getItem(category) || [];
+                let validItems = items.filter(i => i.isSelected);
+                if(validItems.length < count) {
+                    throw new Error(`Phần [${categoryNameStr}] không đủ mẫu để bốc lại.`);
+                }
+                return validItems.sort(() => 0.5 - Math.random()).slice(0, count).map(i => ({ id: i.id, cat: category }));
+            }
+
+            try {
+                const cd_de = await getAndPick('caodo_de', 2, 'Cao độ dễ');
+                const cd_kho = await getAndPick('caodo_kho', 2, 'Cao độ khó');
+                const tt_de = await getAndPick('tiettau_de', 2, 'Tiết tấu dễ');
+                const tt_kho = await getAndPick('tiettau_kho', 2, 'Tiết tấu khó');
+
+                let examIndex = allExams.findIndex(e => e.id === currentSingleExamId);
+                if(examIndex === -1) return;
+
+                allExams[examIndex].data = {
+                    caodo: [cd_de[0], cd_de[1], cd_kho[0], cd_kho[1]],
+                    tiettau: [tt_de[0], tt_de[1], tt_kho[0], tt_kho[1]]
+                };
+
+                await examDB.setItem('list', allExams);
+                await renderPreview([allExams[examIndex]]);
+
+            } catch (error) {
+                alert("Lỗi khi bốc lại đề:\n" + error.message);
+            }
+        }
+
+        // HÀM RENDER CORE (Đã Fix: Ép khung ảnh bằng nhau + Bao trọn 100% trên 1 trang A4)
+        async function renderPreview(examsArray) {
+            const container = document.getElementById('exam-preview-container');
+            container.innerHTML = '<div style="text-align:center; padding: 50px; font-size: 18px;">Đang tải và lắp ráp dữ liệu hình ảnh từ Ngân hàng...</div>';
+            
+            document.getElementById('manager-section').style.display = 'none';
+            document.getElementById('preview-section').style.display = 'block';
+
+            // 1. Tải Dữ liệu Nhạc
+            const bankData = {};
+            const categoriesToLoad = ['caodo_de', 'caodo_kho', 'tiettau_de', 'tiettau_kho'];
+            for (let cat of categoriesToLoad) {
+                let items = await bankDB.getItem(cat) || [];
+                items.forEach(i => { bankData[`${cat}_${i.id}`] = i.imgData; });
+            }
+
+            // 2. Tải Dữ liệu Ghi Chú
+            const examNote = await bankDB.getItem('exam_note');
+
+            const fallbackImg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="50"><rect width="300" height="50" fill="%23ffebee"/><text x="10" y="30" fill="%23c0392b" font-family="Arial" font-size="14">⚠ Ảnh mã này đã bị xóa</text></svg>';
+
+            const getImg = (ref) => {
+                if (!ref) return fallbackImg;
+                if (typeof ref === 'string') return ref; 
+                if (ref.cat && ref.id) return bankData[`${ref.cat}_${ref.id}`] || fallbackImg; 
+                return fallbackImg;
+            };
+
+            let fullHtml = '';
+
+            examsArray.forEach((exam, index) => {
+                const data = exam.data;
+                const titleText = (exam.tenKyThi || "ĐỀ THI ĐÁNH GIÁ NĂNG LỰC NĂM 2026").toUpperCase();
+                const footerText = `${formatDate(exam.ngayThi)} - ${exam.buoiThi} - ${exam.suatThi}`;
+                
+                // KIỂM TRA GHI CHÚ
+                let noteHtml = '';
+                if (exam.includeNote && examNote && (examNote.text || examNote.image)) {
+                    let noteTextHtml = examNote.text ? `<span style="font-style: italic;"> ${examNote.text.replace(/\n/g, ' ')}</span>` : '';
+                    let noteImgHtml = examNote.image ? `<img src="${examNote.image}" style="max-height: 25px; width: auto; vertical-align: middle; margin-left: 8px;">` : '';
+                    
+                    noteHtml = `
+                    <div style="margin-bottom: 4px; font-size: 11pt; font-family: 'Times New Roman', Times, serif;">
+                        <span style="font-weight: bold; text-decoration: underline;">Ghi chú:</span>${noteTextHtml}${noteImgHtml}
+                    </div>
+                    `;
+                }
+                
+                let pageHtml = `
+                <div class="a4-preview">
+                    <table width="100%" style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 0; font-family: 'Times New Roman', Times, serif; color: darkblue;">
+                        <tr>
+                            <td width="40%" style="width: 40%; text-align: center; vertical-align: top; border: none; padding: 0;">
+                                <p style="margin: 0; padding: 0; font-size: 12pt; line-height: 1.1;">ĐẠI HỌC HUẾ</p>
+                                <p style="margin: 0; padding: 0; font-size: 12pt; font-weight: bold; line-height: 1.1;"><u>TRƯỜNG ĐẠI HỌC SƯ PHẠM</u></p>
+                                <p style="margin: 4px 0 0 0; padding: 0; font-size: 11pt; font-weight: bold; color: red;">ĐỀ THI CHÍNH THỨC</p>
+                            </td>
+                            <td width="60%" style="width: 60%; text-align: center; vertical-align: top; border: none; padding: 0;">
+                                <p style="margin: 0; padding: 0; font-size: 12pt; font-weight: bold; line-height: 1.1;">${titleText}</p>
+                                <p style="margin: 2px 0 0 0; padding: 0; font-size: 12pt; font-weight: bold; line-height: 1.1;">Môn: CAO ĐỘ VÀ TIẾT TẤU &nbsp;&nbsp;&nbsp;&nbsp; Khối: N</p>
+                                <p style="margin: 2px 0 0 0; padding: 0; font-size: 11pt; font-style: italic; line-height: 1.1;">(Thời gian trình bày không quá 03 phút)</p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="border-top: 1.5px solid #000; margin: 4px 0 2px 0;"></div>
+
+                    <p style="text-align: right; font-weight: bold; font-size: 13pt; margin: 0 0 2px 0; font-family: 'Times New Roman', Times, serif;">
+                        Đề số: ${exam.name}N
+                    </p>
+                    
+                    ${noteHtml}
+                    
+                    <p style="margin: 0 0 2px 0; font-size: 13pt; font-family: 'Times New Roman', Times, serif;">
+                        <strong>I. PHẦN CAO ĐỘ (5/10 điểm)</strong>
+                    </p>
+                    <p style="margin: 0 0 2px 0; font-size: 13pt; font-family: 'Times New Roman', Times, serif;">
+                        Thí sinh nghe và xướng theo 4 mẫu sau bằng âm “la” (mỗi mẫu giám khảo đàn tối đa 3 lần)
+                    </p>
+                    
+                    <table width="100%" style="width: 100%; border-collapse: collapse; border: none; font-family: 'Times New Roman', Times, serif;">
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 1:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.caodo[0])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 2:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.caodo[1])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 3:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.caodo[2])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 4:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.caodo[3])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                    </table>
+
+                    <p style="margin: 4px 0 2px 0; font-size: 13pt; font-family: 'Times New Roman', Times, serif;">
+                        <strong>II. PHẦN TIẾT TẤU (5/10 điểm)</strong>
+                    </p>
+                    <p style="margin: 0 0 2px 0; font-size: 13pt; font-family: 'Times New Roman', Times, serif;">
+                        Thí sinh nghe và tái hiện lại 4 mẫu tiết tấu sau dưới hình thức gõ hoặc vỗ tay (mỗi mẫu giám khảo gõ không quá 3 lần)
+                    </p>
+                    
+                    <table width="100%" style="width: 100%; border-collapse: collapse; border: none; font-family: 'Times New Roman', Times, serif;">
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 1:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.tiettau[0])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 2:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.tiettau[1])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 3:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.tiettau[2])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                        <tr><td width="60" style="width: 70px; white-space: nowrap; vertical-align: middle; font-size: 12pt; font-weight: bold; padding: 0; border: none;">Mẫu 4:</td><td style="vertical-align: middle; padding: 0; border: none;"><img src="${getImg(data.tiettau[3])}" width="600" height="48" style="display: block; width: 600px; height: 48px; object-fit: fill;"></td></tr>
+                    </table>
+                    
+                    <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #ccc; font-size: 10pt; font-style: italic; color: #555; font-family: 'Times New Roman', Times, serif; text-align: left;">
+                        Mã ca thi: ${footerText}
+                    </div>
+                </div>
+                `;
+
+                if (index < examsArray.length - 1) {
+                    pageHtml += `<br clear="all" style="page-break-before:always; mso-break-type:page-break" class="no-print" />`;
+                }
+
+                fullHtml += pageHtml;
+            });
+
+            container.innerHTML = fullHtml;
+        }
+
+        // --- 5. CÁC HÀM XÓA VÀ ĐÓNG ---
+        async function deleteExam(examId) {
+            if(!confirm("Bạn có chắc muốn xóa mã đề này?")) return;
+            let examsList = await examDB.getItem('list') || [];
+            examsList = examsList.filter(e => e.id !== examId);
+            await examDB.setItem('list', examsList);
+            loadExams();
+        }
+
+        async function deleteBatch() {
+            const filter = document.getElementById('filter-suat-thi').value;
+            if(filter === 'all') return alert("Vui lòng chọn 1 Suất thi cụ thể trong danh sách thả xuống để xóa!");
+            if(!confirm(`XÓA TOÀN BỘ SUẤT THI:\n[ ${filter} ]\nBạn chắc chứ?`)) return;
+
+            let examsList = await examDB.getItem('list') || [];
+            examsList = examsList.filter(e => `${formatDate(e.ngayThi)} | ${e.buoiThi} | ${e.suatThi}` !== filter);
+            await examDB.setItem('list', examsList);
+            loadExams();
+        }
+
+        function closePreview() {
+            document.getElementById('preview-section').style.display = 'none';
+            document.getElementById('manager-section').style.display = 'block';
+        }
+
+        function printExam() { window.print(); }
+
+        // --- 6. XUẤT RA FILE WORD (.doc) BẢN TỐI ƯU CHỐNG LỖI CÚ PHÁP ---
+        function exportToWord() {
+            try {
+                const container = document.getElementById('exam-preview-container');
+                if (!container) {
+                    alert("Không tìm thấy dữ liệu đề thi!");
+                    return;
+                }
+
+                const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" +
+                "<head>" +
+                    "<meta charset='utf-8'>" +
+                    "<title>Bộ Đề Thi Khối N</title>" +
+                    "<style>" +
+                        "body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; line-height: 1.5; } " +
+                        "img { max-width: 100%; height: auto; display: block; }" +
+                    "</style>" +
+                "</head>" +
+                "<body>";
+                
+                const postHtml = "</" + "body></" + "html>";
+                const html = preHtml + container.innerHTML + postHtml;
+                
+                const bom = new Uint8Array([239, 187, 191]); 
+                const blob = new Blob([bom, html], { type: 'application/msword;charset=utf-8' });
+                
+                const downloadLink = document.createElement("a");
+                document.body.appendChild(downloadLink);
+                
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                
+                const fileName = (typeof exportFileName !== 'undefined' && exportFileName) ? exportFileName : "Bo_De_Thi_Khoi_N.doc";
+                downloadLink.download = fileName; 
+                
+                downloadLink.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(downloadLink);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                console.error("Lỗi khi xuất file Word: ", error);
+                alert("Đã xảy ra lỗi trong quá trình xuất file Word. Vui lòng kiểm tra lại!");
+            }
+        }
+    </script>
+</body>
+</html>
