@@ -1,43 +1,85 @@
+/* =========================================================
+   HỆ THỐNG QUẢN LÝ ĐỀ THI - BẢNG STYLE CHUNG (style.css)
+   (Bản gốc chủ đạo + Bổ sung tính năng Crop & Spinner)
+========================================================= */
+
 /* --- CSS Reset & Cơ bản --- */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-body { background-color: #f0f2f5; color: #333; height: 100vh; overflow: hidden; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f0f2f5;
+    color: #333;
+    height: 100vh;
+    overflow: hidden;
+}
 
 /* --- MÀN HÌNH ĐĂNG NHẬP --- */
-.login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
-.login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+#login-screen, .login-screen {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    position: fixed; top: 0; left: 0; z-index: 9999;
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
 .login-box h2 { margin-bottom: 20px; color: #0056b3; }
 .input-group { margin-bottom: 15px; text-align: left; }
 .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
 .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+
 .btn { padding: 10px 15px; background: #0056b3; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; transition: 0.3s; }
 .btn:hover { background: #004494; }
+
+.btn-login { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-login:hover { background: #2980b9; }
+
 .btn-danger { background: #dc3545; }
 .btn-danger:hover { background: #c82333; }
 .btn-info { background: #17a2b8; }
 .btn-info:hover { background: #138496; }
-#login-error { color: red; margin-top: 15px; display: none; font-size: 14px; }
+.btn-success { background: #27ae60; }
+.btn-success:hover { background: #218838; }
+
+#login-error, #login-msg { color: red; margin-top: 15px; display: none; font-size: 14px; font-weight: bold; min-height: 20px;}
+#app-screen { display: none; }
 
 /* --- BẢNG ĐIỀU KHIỂN (DASHBOARD) --- */
-.app-container { display: flex; height: 100vh; }
+.app-container { display: flex; height: 100vh; width: 100vw; }
 
-/* Sidebar (Menu Trái) */
-.sidebar { width: 250px; background: #2c3e50; color: white; display: flex; flex-direction: column; }
-.sidebar-header { padding: 20px; background: #1a252f; text-align: center; font-weight: bold; font-size: 18px; border-bottom: 1px solid #34495e; }
-.menu { flex: 1; overflow-y: auto; list-style: none; padding: 0; margin: 0; }
+.sidebar { width: 210px; min-width: 210px; background: #2c3e50; color: white; display: flex; flex-direction: column; z-index: 1000; }
+.sidebar-header { padding: 10px; background: #1a252f; text-align: center; font-weight: bold; font-size: 18px; border-bottom: 1px solid #34495e; }
+.menu { flex: 1; list-style: none; padding: 0; margin: 0;}
 .menu-item { border-bottom: 1px solid #34495e; }
-.menu-item a { display: block; padding: 15px 20px; color: #ecf0f1; text-decoration: none; transition: 0.3s; cursor: pointer; }
-.menu-item a:hover, .menu-item a.active { background: #34495e; border-left: 4px solid #3498db; }
+.menu-item a { display: block; padding: 10px 15px; color: #ecf0f1; text-decoration: none; transition: 0.3s; cursor: pointer; }
+.menu-item a:hover, .menu-item a.active, .menu-item.active a { background: #34495e; border-left: 4px solid #3498db; }
 .menu-title { padding: 10px 20px; font-size: 12px; color: #7f8c8d; text-transform: uppercase; margin-top: 10px; font-weight: bold; }
+
 .sidebar-footer { padding: 15px; text-align: center; background: #1a252f; }
 .sidebar-footer a { color: #e74c3c; text-decoration: none; font-weight: bold; cursor: pointer; }
 
-/* Main Content (Nội Dung Phải) */
-.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f6; }
-.topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+.main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f6; position: relative; overflow: hidden; }
+.topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); display: flex; justify-content: space-between; align-items: center; z-index: 99;}
 .content-area { padding: 20px; flex: 1; overflow-y: auto; }
-.page-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 400px; }
+.page-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); min-height: 100px; margin-bottom: 20px;}
 
-/* --- TABS (Cho các trang có nhiều mục con như Khối N) --- */
+/* --- TABS --- */
 .tab-container { margin-bottom: 20px; border-bottom: 2px solid #ddd; }
 .tab-btn { background: none; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; color: #555; margin-right: 5px; font-weight: bold; outline: none; }
 .tab-btn.active { color: #0056b3; border-bottom: 3px solid #0056b3; }
@@ -47,9 +89,12 @@ body { background-color: #f0f2f5; color: #333; height: 100vh; overflow: hidden; 
 /* --- BẢNG DỮ LIỆU --- */
 .filter-bar { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
 .filter-bar select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 15px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 table th, table td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
 table th { background-color: #f8f9fa; font-weight: bold; }
+
+.import-box { border: 2px dashed #3498db; padding: 40px; text-align: center; background: #f0f7ff; border-radius: 8px; margin-bottom: 20px; }
 .td-preview img { max-height: 50px; display: block; }
 
 /* Nút gạt (Toggle Switch) */
@@ -60,8 +105,96 @@ table th { background-color: #f8f9fa; font-weight: bold; }
 input:checked + .slider { background-color: #28a745; }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* --- MODAL XEM CHI TIẾT --- */
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-.modal-content { background: white; padding: 20px; border-radius: 8px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; }
+
+/* =========================================================
+   CÁC THIẾT LẬP MỚI BỔ SUNG (MODAL, CROP ẢNH, LOADING)
+========================================================= */
+
+/* Hộp thoại Modal & Lớp mờ (Chắp vá từ bản mới) */
+.modal, .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7); z-index: 10000; justify-content: center; align-items: center;
+}
+
+/* Đã chỉnh max-width lên 1200px theo ý cụ */
+.modal-content {
+    background: white; padding: 20px; border-radius: 8px; 
+    max-width: 1200px; width: 95%; max-height: 90vh; 
+    display: flex; flex-direction: column; overflow-y: auto;
+}
+
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
 .close-btn { font-size: 24px; cursor: pointer; color: red; font-weight: bold; }
+
+/* Công cụ cắt ảnh (Crop) */
+.modal-body {
+    flex-grow: 1; overflow: auto; text-align: center; position: relative;
+    background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;
+}
+#crop-wrapper { position: relative; display: inline-block; transform-origin: 0 0; }
+#modal-img { display: block; max-width: none; }
+#crop-guide { position: absolute; border: 2px dashed #e74c3c; background: rgba(231, 76, 60, 0.2); pointer-events: none; display: none; z-index: 10; }
+.image-preview { max-width: 100%; height: auto; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: #fff; max-height: 80px; object-fit: contain; }
+
+/* Giao diện Loading Spinner */
+#loading-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.9); z-index: 9999; flex-direction: column; justify-content: center; align-items: center;
+}
+
+.spinner {
+    border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%;
+    width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}
+
+/* Toast Notification (Góc màn hình) */
+#toast-notification {
+    position: fixed; bottom: 30px; right: 30px; background: #2c3e50; color: white;
+    padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    font-size: 15px; font-weight: bold; z-index: 10001; transform: translateX(150%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 12px;
+}
+#toast-notification.show { transform: translateX(0); }
+/* =========================================================
+   CẤU HÌNH DÀNH RIÊNG CHO MÁY IN & XUẤT PDF (@media print)
+========================================================= */
+@media print {
+    /* 1. Phá bỏ giới hạn chiều cao và thanh cuộn của App để máy in đọc được toàn bộ */
+    body, html, .app-container, .main-content, .content-area {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        background: white !important;
+    }
+
+    /* 2. Giấu đi các thành phần không cần thiết trên tờ giấy in */
+    .sidebar, .topbar, .tab-container, .btn, button, .control-panel, .filter-bar, #toast-notification, #loading-overlay {
+        display: none !important;
+    }
+
+    /* 3. Khung hiển thị đề thi chiếm trọn 100% trang giấy */
+    #exam-preview-container {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        position: static !important;
+    }
+
+    /* 4. Khôi phục lại tính năng ngắt trang (Cực kỳ quan trọng) */
+    .page-break {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    /* (Tùy chọn) Chỉnh lại cỡ chữ cho phù hợp trang giấy A4 */
+    body {
+        font-size: 12pt !important;
+        color: black !important;
+    }
+}
