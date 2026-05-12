@@ -208,37 +208,44 @@
                 statusEl.innerText = "Hệ thống trống. Đang phân tích file Backup...";
                 setTimeout(async () => {
                     if (confirm("Phân hệ này hiện chưa có dữ liệu.\nBạn có muốn tự động quét và nạp dữ liệu từ file hệ thống 'data/backup.json' không?")) {
-                        try {
-                            const response = await fetch('data/backup.json');
-                            const data = await response.json();
-                            
-                            async function restoreDB(db, obj) { await db.clear(); if(obj) for(let k in obj) await db.setItem(k, obj[k]); }
-                            
-                            // 1. Khôi phục Khối M-N
-                            if (data.nganhang_n || data.nganhang_m) {
-                                await restoreDB(khoiNDB, data.nganhang_n); await restoreDB(examNDB, data.dethi_n);
-                                await restoreDB(khoiMDB, data.nganhang_m); await restoreDB(examMDB, data.dethi_m);
-                            }
-                            // 2. Khôi phục TNKQ
-                            if (data.nganhang_tnkq) {
-                                await restoreDB(dbTNKQ_Bank, data.nganhang_tnkq);
-                                await restoreDB(dbTNKQ_Exam, data.lich_su_ky_thi);
-                                await restoreDB(dbTNKQ_Matrix, data.cau_hinh_ma_tran);
-                            }
-                            // 3. Khôi phục Tự Luận
-                            if (data.nganhang_tuluan) {
-                                await restoreDB(dbTL_Bank, data.nganhang_tuluan);
-                                await restoreDB(dbTL_Exam, data.lich_su_ky_thi_tuluan);
-                                await restoreDB(dbTL_Matrix, data.cau_hinh_ma_tran_tuluan);
-                            }
-                            // 4. Khôi phục System
-                            if (data.system) await restoreDB(sysDB, data.system);
-                            
-                            alert("✅ Nạp thành công! Đang vào phân hệ...");
-                        } catch (e) { 
-                            alert("❌ Không tìm thấy file backup.json, hoặc file đã bị mã hóa (.enc).\nHãy vào 'Hệ thống > Cấu hình' để nạp thủ công bằng file Backup mà bạn đã tải."); 
-                        }
-                    }
+    try {
+        // Thêm tham số thời gian để ép GitHub không dùng cache cũ
+        const response = await fetch('data/backup.json?t=' + new Date().getTime());
+        
+        if (!response.ok) {
+            throw new Error(`Mã lỗi ${response.status} - Không tìm thấy file trên GitHub!`);
+        }
+        
+        const data = await response.json();
+        
+        async function restoreDB(db, obj) { await db.clear(); if(obj) for(let k in obj) await db.setItem(k, obj[k]); }
+        
+        // 1. Khôi phục Khối M-N
+        if (data.nganhang_n || data.nganhang_m) {
+            await restoreDB(khoiNDB, data.nganhang_n); await restoreDB(examNDB, data.dethi_n);
+            await restoreDB(khoiMDB, data.nganhang_m); await restoreDB(examMDB, data.dethi_m);
+        }
+        // 2. Khôi phục TNKQ
+        if (data.nganhang_tnkq) {
+            await restoreDB(dbTNKQ_Bank, data.nganhang_tnkq);
+            await restoreDB(dbTNKQ_Exam, data.lich_su_ky_thi);
+            await restoreDB(dbTNKQ_Matrix, data.cau_hinh_ma_tran);
+        }
+        // 3. Khôi phục Tự Luận
+        if (data.nganhang_tuluan) {
+            await restoreDB(dbTL_Bank, data.nganhang_tuluan);
+            await restoreDB(dbTL_Exam, data.lich_su_ky_thi_tuluan);
+            await restoreDB(dbTL_Matrix, data.cau_hinh_ma_tran_tuluan);
+        }
+        // 4. Khôi phục System
+        if (data.system) await restoreDB(sysDB, data.system);
+        
+        alert("✅ Nạp thành công! Đang vào phân hệ...");
+    } catch (e) { 
+        // BÁO LỖI CHI TIẾT RA MÀN HÌNH ĐỂ BIẾT TẠI SAO XỊT
+        alert("❌ Lỗi nạp tự động:\n" + e.message + "\n\nGiải pháp: Hãy vào 'Hệ Thống > Cấu hình & Bảo mật' để nạp thủ công bằng nút [Chọn file Backup để Khôi phục]."); 
+    }
+}
                     redirectModule(module);
                 }, 500);
             } else {
