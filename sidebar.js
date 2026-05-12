@@ -2,51 +2,83 @@ document.addEventListener("DOMContentLoaded", function () {
     // 1. TỰ ĐỘNG BƠM CSS SIDEBAR VÀO TRANG (CSS-in-JS)
     const style = document.createElement('style');
     style.innerHTML = `
-        .sidebar { width: 210px; background: #2c3e50; color: white; display: flex; flex-direction: column; height: 100vh; z-index: 100; }
-        .sidebar-header { padding: 10px; background: #1a252f; text-align: center; font-weight: bold; }
-        .menu { list-style: none; flex: 1; overflow-y: auto; margin: 0; padding: 0; }
-        .menu-item a { color: white; text-decoration: none; padding: 8px 10px; display: block; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.2s; }
-        .menu-item a:hover, .menu-item.active a { background: #34495e; border-left: 4px solid #3498db; }
-        .menu-category { padding: 15px 20px 5px; font-size: 12px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-        .menu-title { padding: 15px 20px 5px; font-size: 12px; color: #95a5a6; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-        .sidebar-footer { padding: 15px; text-align: center; margin-top: auto; border-top: 1px solid #34495e; }
+        /* Khung chính của Sidebar */
+        .sidebar { width: 180px; background: #111827; color: #f3f4f6; display: flex; flex-direction: column; height: 100vh; z-index: 100; font-family: 'Segoe UI', system-ui, sans-serif; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
         
-        .btn-logout { display: inline-block; padding: 8px 20px; background: rgba(231, 76, 60, 0.1); color: #e74c3c; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
-        .btn-logout:hover { background: #e74c3c; color: white; transform: translateY(-2px); }
+        /* Header Sidebar: Bố cục ngang sang trọng */
+        .sidebar-header { padding: 20px 15px; display: flex; align-items: center; gap: 12px; background: #0f172a; border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
+        .sidebar-header img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+        .sidebar-header .brand { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff; }
+        
+        /* Menu chính - Đảm bảo min-height: 0 để không bị tràn màn hình */
+        .menu { list-style: none; flex: 1; overflow-y: auto; margin: 0; padding: 10px 5px; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
+        
+        /* Tiêu đề nhóm */
+        .menu-category { padding: 10px 10px 6px; font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
+        
+        /* Nút menu */
+        .menu-item a { 
+            color: #cbd5e1; 
+            text-decoration: none; 
+            padding: 5px 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-size: 13.5px; 
+            border-radius: 8px; 
+            transition: all 0.15s ease; 
+        }
+        .menu-item a:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
+        .menu-item.active a { background: #3b82f6; color: #ffffff; font-weight: 500; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        
+        /* Footer chứa nút đăng xuất & Chữ ký */
+        .sidebar-footer { padding: 20px 15px; background: #0f172a; border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
+        
+        .btn-logout { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 5px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; }
+        .btn-logout:hover { background: #ef4444; color: #ffffff; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
 
-        /* Làm đẹp thanh cuộn của riêng menu */
-        .menu::-webkit-scrollbar { width: 5px; }
-        .menu::-webkit-scrollbar-track { background: #2c3e50; }
-        .menu::-webkit-scrollbar-thumb { background: #34495e; border-radius: 5px; }
-        .menu::-webkit-scrollbar-thumb:hover { background: #7f8c8d; }
+        .watermark { margin-top: 18px; font-size: 11px; color: #475569; text-align: center; line-height: 1.6; }
+        .watermark b { color: #94a3b8; }
+
+        /* Scrollbar tàng hình, mượt mà */
+        .menu::-webkit-scrollbar { width: 4px; }
+        .menu::-webkit-scrollbar-track { background: transparent; }
+        .menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .menu::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     `;
     document.head.appendChild(style);
 
     // 2. CHỨA MÃ HTML CỦA SIDEBAR
     const sidebarHTML = `
         <div class="sidebar-header">
-            <a href="start.html">
-            <img src="img/logo.jpg" alt="Logo" style="width: 50px; border-radius: 50%;">
+            <a href="start.html" style="display:flex;">
+                <img src="img/logo.jpg" alt="Logo">
             </a>
-            <div style="margin-top: 10px;">NV-SMART-EDU</div>
+            <div class="brand">NV-SMART</div>
         </div>
         
         <ul class="menu">
             <li class="menu-item" data-page="dashboard.html"><a href="dashboard.html">📊 Tổng quan</a></li>
+            
             <div class="menu-category">Trắc Nghiệm</div>
-            <li class="menu-item" data-page="de_tnkq.html"><a href="de_tnkq.html">📝 Ngân hàng TNKQ</a></li>
-            <li class="menu-item" data-page="tao-de-tnkq.html"><a href="tao-de-tnkq.html">🖨️ Tổ chức Thi TNKQ</a></li>
+            <li class="menu-item" data-page="de_tnkq.html"><a href="de_tnkq.html">📝 Kho câu hỏi</a></li>
+            <li class="menu-item" data-page="tao-de-tnkq.html"><a href="tao-de-tnkq.html">🖨️ Tạo đề thi</a></li>
             
             <div class="menu-category">Tự Luận</div>
-            <li class="menu-item" data-page="de_tuluan.html"><a href="de_tuluan.html">✍️ Ngân hàng Tự luận</a></li>
-            <li class="menu-item" data-page="tao-de-tuluan.html"><a href="tao-de-tuluan.html">🖨️ Tổ chức Thi Tự luận</a></li>
+            <li class="menu-item" data-page="de_tuluan.html"><a href="de_tuluan.html">✍️ Kho câu hỏi</a></li>
+            <li class="menu-item" data-page="tao-de-tuluan.html"><a href="tao-de-tuluan.html">🖨️ Tạo đề thi</a></li>
 
-            <div class="menu-title">Hệ Thống</div>
-            <li class="menu-item" data-page="settings.html"><a href="settings.html">⚙️ Cấu hình & Bảo mật</a></li>
+            <div class="menu-category">Hệ Thống</div>
+            <li class="menu-item" data-page="settings.html"><a href="settings.html">⚙️ Cài đặt chung</a></li>
         </ul>
 
         <div class="sidebar-footer">
-            <a onclick="handleLogout()" class="btn-logout">🚪 Đăng xuất</a>
+            <div onclick="handleLogout()" class="btn-logout">🚪 Đăng xuất</div>
+            <div class="watermark">
+                Developed by <br>
+                <b>NV-SMART-EDU</b><br>
+                &copy; 2026
+            </div>
         </div>
     `;
 
@@ -70,9 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // 5. HÀM ĐĂNG XUẤT DÙNG CHUNG CHO TOÀN BỘ HỆ THỐNG
 window.handleLogout = function () {
     if (confirm("Bạn có chắc chắn muốn thoát khỏi hệ thống?")) {
-        // Xóa trạng thái đăng nhập
         sessionStorage.removeItem("isLoggedIn");
-        // Chuyển hướng về cổng chính kèm theo biến báo hiệu đã đăng xuất an toàn
         window.location.href = "start.html?logout=true";
     }
 };
