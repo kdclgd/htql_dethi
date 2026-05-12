@@ -14,43 +14,65 @@
         }
         .splash-box {
             text-align: center; background: rgba(255, 255, 255, 0.1);
-            padding: 50px; border-radius: 15px; backdrop-filter: blur(10px);
+            padding: 40px; border-radius: 15px; backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
-            max-width: 600px;
+            width: 90%; max-width: 550px;
         }
-        h1 { margin: 0 0 10px 0; font-size: 32px; }
-        p { margin: 0 0 30px 0; font-size: 16px; color: #ecf0f1; line-height: 1.5; }
+        h1 { margin: 0 0 10px 0; font-size: 30px; text-transform: uppercase; }
+        p { margin: 0 0 25px 0; font-size: 16px; color: #ecf0f1; line-height: 1.5; }
         
-        .btn-start {
-            padding: 15px 40px; font-size: 18px; font-weight: bold; color: #2c3e50;
-            background: #f1c40f; border: none; border-radius: 30px; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+        .btn-module {
+            display: flex; align-items: center; justify-content: flex-start;
+            width: 100%; padding: 15px 25px; margin-bottom: 15px;
+            font-size: 17px; font-weight: bold; border: none; border-radius: 12px;
+            cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .btn-start:hover { background: #f39c12; transform: translateY(-2px); }
+        .btn-module .icon { font-size: 24px; margin-right: 15px; }
         
-        /* Nút cho phần Đăng xuất */
-        .btn-clear {
-            padding: 12px 25px; font-size: 16px; font-weight: bold; color: white;
-            background: #e74c3c; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;
-        }
+        .btn-mn { background: #f1c40f; color: #2c3e50; }
+        .btn-mn:hover { background: #f39c12; transform: translateY(-3px); box-shadow: 0 6px 15px rgba(241, 196, 15, 0.4); }
+
+        .btn-tnkq { background: #2ecc71; color: white; }
+        .btn-tnkq:hover { background: #27ae60; transform: translateY(-3px); box-shadow: 0 6px 15px rgba(46, 204, 113, 0.4); }
+
+        .btn-tuluan { background: #9b59b6; color: white; }
+        .btn-tuluan:hover { background: #8e44ad; transform: translateY(-3px); box-shadow: 0 6px 15px rgba(155, 89, 182, 0.4); }
+        
+        .btn-clear { padding: 12px 25px; font-size: 16px; font-weight: bold; color: white; background: #e74c3c; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .btn-clear:hover { background: #c0392b; transform: scale(1.05); }
         
-        .btn-keep {
-            padding: 12px 25px; font-size: 16px; font-weight: bold; color: white;
-            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 8px; cursor: pointer; transition: 0.2s;
-        }
+        .btn-keep { padding: 12px 25px; font-size: 16px; font-weight: bold; color: white; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .btn-keep:hover { background: rgba(255, 255, 255, 0.3); }
 
-        #status-text { margin-top: 20px; font-size: 14px; font-style: italic; display: none; color: #f1c40f;}
+        #status-text { margin-top: 15px; font-size: 15px; font-style: italic; display: none; color: #f1c40f; font-weight: bold;}
+        
+        .login-input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: none; font-size: 18px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-    <div class="splash-box" id="box-start">
-        <h1>HỆ THỐNG QUẢN LÝ ĐỀ THI</h1>
-        <p>Khối M (Kể chuyện) & Khối N (Cao độ - Tiết tấu)</p>
-        <button class="btn-start" onclick="initApp()">🚀 KHỞI ĐỘNG HỆ THỐNG</button>
-        <div id="status-text">Đang kiểm tra hệ thống...</div>
+    <div class="splash-box" id="box-login" style="display: none;">
+        <h1>🔒 XÁC THỰC HỆ THỐNG</h1>
+        <p>Vui lòng đăng nhập để truy cập Ngân hàng Đề thi</p>
+        <input type="password" id="portal-pass" class="login-input" placeholder="Nhập mật khẩu (Mặc định: 123456)..." onkeypress="if(event.key === 'Enter') portalLogin()">
+        <button class="btn-module btn-tnkq" style="justify-content: center; margin-bottom: 0;" onclick="portalLogin()">🚀 ĐĂNG NHẬP</button>
+    </div>
+
+    <div class="splash-box" id="box-start" style="display: none;">
+        <h1>CỔNG QUẢN LÝ ĐỀ THI</h1>
+        <p>Hệ thống đã sẵn sàng. Vui lòng chọn phân hệ:</p>
+        
+        <button class="btn-module btn-mn" onclick="initApp('mn')">
+            <span class="icon">🎭</span> 1. Khối M (Kể chuyện) & Khối N
+        </button>
+        <button class="btn-module btn-tnkq" onclick="initApp('tnkq')">
+            <span class="icon">☑️</span> 2. Quản lý Đề thi Trắc nghiệm
+        </button>
+        <button class="btn-module btn-tuluan" onclick="initApp('tuluan')">
+            <span class="icon">✍️</span> 3. Quản lý Đề thi Tự luận
+        </button>
+
+        <div id="status-text">Đang tải cấu hình...</div>
     </div>
 
     <div class="splash-box" id="box-logout" style="display: none;">
@@ -60,109 +82,175 @@
             <button class="btn-clear" onclick="clearDataForSecurity()">🗑️ Có, Xóa Toàn Bộ</button>
             <button class="btn-keep" onclick="keepDataAndGoHome()">Không, Giữ Nguyên</button>
         </div>
-        <div id="logout-status" style="margin-top: 20px; font-size: 14px; font-style: italic; color: #f1c40f; display: none;">Đang xóa dữ liệu...</div>
+        <div id="logout-status" style="margin-top: 20px; font-size: 14px; font-style: italic; color: #f1c40f; display: none;">Đang kiểm tra an toàn dữ liệu...</div>
     </div>
 
     <script>
-        // Khởi tạo kết nối DB
+        // LIỆT KÊ ĐẦY ĐỦ 9 BỘ CƠ SỞ DỮ LIỆU CỦA HỆ THỐNG
+        const sysDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "system" });
+        
         const khoiNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
         const examNDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_n" });
         const khoiMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_m" });
         const examMDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_m" });
-        const sysDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "system" });
+        
+        const dbTNKQ_Bank = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tnkq" });
+        const dbTNKQ_Exam = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "lich_su_ky_thi" });
+        const dbTNKQ_Matrix = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "cau_hinh_ma_tran" });
+        
+        const dbTL_Bank = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tuluan" });
+        const dbTL_Exam = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "lich_su_ky_thi_tuluan" });
+        const dbTL_Matrix = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "cau_hinh_ma_tran_tuluan" });
 
-        // --- KIỂM TRA TRẠNG THÁI URL KHI VỪA VÀO TRANG ---
+        // --- ĐIỀU HƯỚNG MÀN HÌNH ---
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
+            
             if (urlParams.get('logout') === 'true') {
-                // Nếu là vừa bấm logout, ẩn hộp khởi động, hiện hộp cảnh báo
-                document.getElementById('box-start').style.display = 'none';
                 document.getElementById('box-logout').style.display = 'block';
+            } 
+            else if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('box-start').style.display = 'block';
+            } 
+            else {
+                document.getElementById('box-login').style.display = 'block';
+                document.getElementById('portal-pass').focus();
             }
         };
 
-        // --- CÁC HÀM XỬ LÝ ĐĂNG XUẤT ---
-        async function clearDataForSecurity() {
-            if(confirm("CẢNH BÁO CHÓT: Toàn bộ đề thi và cấu hình trên máy này sẽ bị xóa VĨNH VIỄN. Bạn bắt buộc phải Import lại file Backup cho lần sử dụng sau. Bạn chắc chắn chứ?")) {
-                const statusOut = document.getElementById('logout-status');
-                statusOut.style.display = 'block';
-                statusOut.innerText = "Đang dọn dẹp bộ nhớ an toàn...";
+        async function portalLogin() {
+            const pass = document.getElementById('portal-pass').value;
+            const realPass = await sysDB.getItem('admin_pass') || '123456';
+            
+            if (pass === realPass) { 
+                sessionStorage.setItem('isLoggedIn', 'true');
+                document.getElementById('box-login').style.display = 'none';
+                document.getElementById('box-start').style.display = 'block';
+            } else {
+                alert("❌ Sai mật khẩu! Vui lòng thử lại.");
+            }
+        }
 
+        function keepDataAndGoHome() { window.location.href = "start.html"; }
+
+        // --- HÀM XÓA DỮ LIỆU THÔNG MINH ---
+        async function clearDataForSecurity() {
+            const statusOut = document.getElementById('logout-status');
+            statusOut.style.display = 'block';
+            statusOut.innerText = "Đang rà soát dữ liệu an toàn...";
+            statusOut.style.color = "#f1c40f";
+
+            let hasBackup = false;
+            try {
+                // Kiểm tra sự tồn tại của file backup trên thư mục máy chủ / nhánh data
+                const res = await fetch('data/backup.json', { method: 'HEAD' });
+                if (res.ok) hasBackup = true;
+            } catch (e) { hasBackup = false; }
+
+            let confirmMsg = "";
+            if (!hasBackup) {
+                confirmMsg = "🚨 CẢNH BÁO KHẨN CẤP 🚨\n\nHệ thống KHÔNG TÌM THẤY file 'data/backup.json' trên máy của bạn.\nNếu bạn xóa bây giờ, TOÀN BỘ dữ liệu (Khối M-N, TNKQ, Tự Luận) sẽ bị MẤT VĨNH VIỄN trừ khi bạn đã chủ động tải file Backup thủ công (.enc/.json) về tay.\n\nBẠN CÓ THỰC SỰ CHẮC CHẮN MUỐN XÓA SẠCH DỮ LIỆU KHÔNG?";
+            } else {
+                confirmMsg = "Bạn có chắc chắn muốn xóa sạch dữ liệu trên trình duyệt này không?\n(Hệ thống đã nhận diện được file 'data/backup.json' để khôi phục sau này)";
+            }
+
+            if(confirm(confirmMsg)) {
+                statusOut.innerText = "Đang dọn dẹp bộ nhớ an toàn...";
                 try {
-                    await khoiNDB.clear();
-                    await examNDB.clear();
-                    await khoiMDB.clear();
-                    await examMDB.clear();
-                    await sysDB.clear(); // Xóa luôn pass tùy chỉnh (nếu có)
+                    await khoiNDB.clear(); await examNDB.clear();
+                    await khoiMDB.clear(); await examMDB.clear();
+                    await dbTNKQ_Bank.clear(); await dbTNKQ_Exam.clear(); await dbTNKQ_Matrix.clear();
+                    await dbTL_Bank.clear(); await dbTL_Exam.clear(); await dbTL_Matrix.clear();
+                    await sysDB.clear(); 
                     
                     statusOut.innerText = "✅ Đã xóa sạch dữ liệu!";
                     statusOut.style.color = "#2ecc71";
-                    
-                    setTimeout(() => {
-                        window.location.href = "start.html"; // Tải lại trang sạch sẽ
-                    }, 1500);
-                } catch(err) {
-                    alert("Lỗi khi xóa: " + err);
+                    setTimeout(() => { window.location.href = "start.html"; }, 1500);
+                } catch(err) { 
+                    alert("Lỗi khi xóa: " + err); 
+                    statusOut.style.display = 'none';
                 }
+            } else {
+                statusOut.style.display = 'none';
             }
         }
 
-        function keepDataAndGoHome() {
-            // Xóa chữ ?logout=true trên URL để về lại màn hình Khởi động bình thường
-            window.location.href = "start.html"; 
-        }
-
-        // --- HÀM KHỞI ĐỘNG APP (Giữ nguyên như cũ của cụ) ---
-        async function initApp() {
+        // --- KHỞI ĐỘNG VÀ KHÔI PHỤC TỰ ĐỘNG ---
+        async function initApp(module) {
             const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                try { await elem.requestFullscreen(); } catch (err) { console.log("Lỗi Fullscreen:", err); }
-            }
+            if (elem.requestFullscreen) { try { await elem.requestFullscreen(); } catch (err) {} }
 
             const statusEl = document.getElementById('status-text');
             statusEl.style.display = 'block';
-            
-            const keysN = await khoiNDB.keys();
-            const keysM = await khoiMDB.keys();
 
-            if (keysN.length === 0 && keysM.length === 0) {
-                statusEl.innerText = "Hệ thống trống. Đang quét thư mục data...";
-                
+            let isDataEmpty = false;
+
+            // Kiểm tra xem phân hệ người dùng vừa bấm có trống dữ liệu không
+            if (module === 'mn') {
+                statusEl.innerText = "Đang kiểm tra dữ liệu Khối M-N...";
+                const keysN = await khoiNDB.keys();
+                const keysM = await khoiMDB.keys();
+                if (keysN.length === 0 && keysM.length === 0) isDataEmpty = true;
+            } 
+            else if (module === 'tnkq') {
+                statusEl.innerText = "Đang kiểm tra dữ liệu Trắc nghiệm...";
+                const keysTNKQ = await dbTNKQ_Bank.keys();
+                if (keysTNKQ.length === 0) isDataEmpty = true;
+            } 
+            else if (module === 'tuluan') {
+                statusEl.innerText = "Đang kiểm tra dữ liệu Tự luận...";
+                const keysTL = await dbTL_Bank.keys();
+                if (keysTL.length === 0) isDataEmpty = true;
+            }
+
+            // NẾU TRỐNG: Đề xuất tự động phục hồi tất cả các phân hệ từ data/backup.json
+            if (isDataEmpty) {
+                statusEl.innerText = "Hệ thống trống. Đang phân tích file Backup...";
                 setTimeout(async () => {
-                    if (confirm("Hệ thống hiện chưa có dữ liệu.\nBạn có muốn tự động nạp dữ liệu từ file 'data/backup.json' không?")) {
+                    if (confirm("Phân hệ này hiện chưa có dữ liệu.\nBạn có muốn tự động quét và nạp dữ liệu từ file hệ thống 'data/backup.json' không?")) {
                         try {
-                            statusEl.innerText = "Đang tải dữ liệu từ data/backup.json...";
                             const response = await fetch('data/backup.json');
-                            if (!response.ok) throw new Error("Không tìm thấy file backup.json");
-                            
                             const data = await response.json();
                             
-                            statusEl.innerText = "Đang ghi vào cơ sở dữ liệu. Vui lòng đợi...";
+                            async function restoreDB(db, obj) { await db.clear(); if(obj) for(let k in obj) await db.setItem(k, obj[k]); }
                             
-                            async function restoreDB(dbInstance, sourceObj) {
-                                await dbInstance.clear(); 
-                                if(sourceObj) {
-                                    for(let key in sourceObj) { await dbInstance.setItem(key, sourceObj[key]); }
-                                }
-                            }
-
-                            if (data.nganhang_n !== undefined || data.nganhang_m !== undefined) {
+                            // 1. Khôi phục Khối M-N
+                            if (data.nganhang_n || data.nganhang_m) {
                                 await restoreDB(khoiNDB, data.nganhang_n); await restoreDB(examNDB, data.dethi_n);
                                 await restoreDB(khoiMDB, data.nganhang_m); await restoreDB(examMDB, data.dethi_m);
-                                if(data.system) await restoreDB(sysDB, data.system);
                             }
-
-                            alert("✅ Đã nạp dữ liệu thành công! Đang vào hệ thống...");
-                        } catch (error) {
-                            alert("❌ Không thể nạp tự động!\nNguyên nhân: Không tìm thấy file 'data/backup.json' hoặc bạn đang không chạy qua Local Server.\nVui lòng vào mục 'Cấu hình & Bảo mật' để nạp thủ công.");
+                            // 2. Khôi phục TNKQ
+                            if (data.nganhang_tnkq) {
+                                await restoreDB(dbTNKQ_Bank, data.nganhang_tnkq);
+                                await restoreDB(dbTNKQ_Exam, data.lich_su_ky_thi);
+                                await restoreDB(dbTNKQ_Matrix, data.cau_hinh_ma_tran);
+                            }
+                            // 3. Khôi phục Tự Luận
+                            if (data.nganhang_tuluan) {
+                                await restoreDB(dbTL_Bank, data.nganhang_tuluan);
+                                await restoreDB(dbTL_Exam, data.lich_su_ky_thi_tuluan);
+                                await restoreDB(dbTL_Matrix, data.cau_hinh_ma_tran_tuluan);
+                            }
+                            // 4. Khôi phục System
+                            if (data.system) await restoreDB(sysDB, data.system);
+                            
+                            alert("✅ Nạp thành công! Đang vào phân hệ...");
+                        } catch (e) { 
+                            alert("❌ Không tìm thấy file backup.json, hoặc file đã bị mã hóa (.enc).\nHãy vào 'Hệ thống > Cấu hình' để nạp thủ công bằng file Backup mà bạn đã tải."); 
                         }
                     }
-                    window.location.href = "index.html";
+                    redirectModule(module);
                 }, 500);
             } else {
-                statusEl.innerText = "Đã tìm thấy dữ liệu. Đang vào hệ thống...";
-                setTimeout(() => { window.location.href = "index.html"; }, 800);
+                setTimeout(() => { redirectModule(module); }, 500);
             }
+        }
+
+        // --- ĐỊNH TUYẾN ---
+        function redirectModule(module) {
+            if (module === 'mn') window.location.href = "index.html";
+            else if (module === 'tnkq') window.location.href = "de_tnkq.html";
+            else if (module === 'tuluan') window.location.href = "de_tuluan.html";
         }
     </script>
 </body>

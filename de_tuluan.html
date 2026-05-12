@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngân hàng Tự luận - NV-SMART-EDU</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f4f7f6;
+            overflow: hidden;
+        }
+
+        .topbar {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-area {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: #eee;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+            font-size: 15px;
+        }
+
+        .tab-btn.active {
+            background: white;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            font-weight: bold;
+            color: #9b59b6;
+        }
+
+        .tab-content {
+            display: none;
+            border: 1px solid #ddd;
+            padding: 20px;
+            background: white;
+            border-radius: 0 5px 5px 5px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .badge-subject {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .badge-clo {
+            display: inline-block;
+            background: #9b59b6;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .btn-action {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-action:hover {
+            opacity: 0.9;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e74c3c;
+            transition: .4s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #2ecc71;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .status-on {
+            color: #2ecc71;
+        }
+
+        .status-off {
+            color: #e74c3c;
+        }
+
+        /* HIỂN THỊ THÔNG MINH */
+        .q-content-box {
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 10px;
+        }
+
+        .ans-container {
+            display: none;
+            padding: 12px;
+            background: #f0fdf4;
+            border-left: 4px solid #27ae60;
+            font-size: 14px;
+            margin-top: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-toggle-ans {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 1px solid #bdc3c7;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-toggle-ans:hover {
+            background: #d5dbdb;
+        }
+
+        /* PHÂN TRANG */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-top: 20px;
+            padding: 15px 0;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #8e44ad;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .page-btn.active {
+            background: #8e44ad;
+            color: white;
+            border-color: #8e44ad;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: #fdfafec9;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 1000px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #9b59b6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        mjx-container svg {
+            color: #333333 !important;
+        }
+    </style>
+
+    <script src="libs/localforage.min.js"></script>
+    <script src="libs/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
+
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$']] },
+            svg: { fontCache: 'global', scale: 0.93 },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        if (typeof MathJax.typesetPromise === 'function') MathJax.typesetPromise();
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="libs/tex-mml-svg.js"></script>
+</head>
+
+<body>
+
+    <datalist id="subject-list"></datalist>
+    <datalist id="chapter-list"></datalist>
+
+    <div id="app-screen" class="app-container">
+        <aside class="sidebar" id="shared-sidebar"></aside>
+        <script src="sidebar.js"></script>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h3 style="color: #8e44ad;">Quản lý Ngân hàng Câu hỏi Tự luận</h3>
+            </header>
+
+            <section class="content-area">
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="switchTab('list', this)">📋 Kho Tự luận</button>
+                    <button class="tab-btn" onclick="switchTab('import', this)">📥 Nhập từ Word</button>
+                </div>
+
+                <div id="tab-list" class="tab-content active">
+
+                    <div
+                        style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: #fdfafec9; padding: 15px; border-radius: 8px; border: 1px solid #e1bee7;">
+                        <div style="font-weight: bold; color: #8e44ad;">Bộ Lọc:</div>
+                        <select id="filter-subject" onchange="onSubjectFilterChange()"
+                            style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; min-width: 180px; outline: none;">
+                            <option value="">📚 Tất cả Môn học</option>
+                        </select>
+                        <select id="filter-chapter" onchange="loadData(true)"
+                            style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; min-width: 180px; outline: none;">
+                            <option value="">📑 Tất cả Chương/CLO</option>
+                        </select>
+                        <select id="filter-status" onchange="loadData(true)"
+                            style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; min-width: 150px; outline: none;">
+                            <option value="">🔄 Trạng thái (Tất cả)</option>
+                            <option value="true">✅ Đang bật (Được bốc)</option>
+                            <option value="false">❌ Đã tắt (Khóa)</option>
+                        </select>
+                        <input type="text" id="search-q" placeholder="🔍 Tìm nội dung câu..." oninput="loadData(true)"
+                            style="flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <div id="stat-info"
+                            style="background: #8e44ad; color: white; padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                            0 câu</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="130" class="text-center">Phân loại</th>
+                                <th>Nội dung Câu hỏi & Hướng dẫn chấm</th>
+                                <th width="110" class="text-center">Cho phép bốc</th>
+                                <th width="100" class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+
+                    <div id="pagination-container"></div>
+                </div>
+
+                <div id="tab-import" class="tab-content">
+                    <div style="border: 2px dashed #9b59b6; padding: 30px; background: #fbf7fc; border-radius: 8px;">
+                        <h4 style="margin-bottom: 15px; color: #8e44ad;">1. Khai báo thông Phân loại cho đợt nhập này:
+                        </h4>
+                        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                            <div style="flex: 1;" class="input-group">
+                                <label>Môn học:</label>
+                                <input type="text" id="import-subject" list="subject-list"
+                                    placeholder="VD: Triết học Mác-Lênin...">
+                            </div>
+                            <div style="flex: 1;" class="input-group">
+                                <label>Chương / Chuẩn đầu ra (CLO):</label>
+                                <input type="text" id="import-chapter" list="chapter-list"
+                                    placeholder="VD: Chương 1, CLO_1...">
+                            </div>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #e1bee7; margin-bottom: 20px;">
+
+                        <h4 style="margin-bottom: 15px; color: #8e44ad;">2. Tải file Word Tự luận:</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;"><i>Lưu ý: Hệ thống cắt câu hỏi dựa
+                                trên các đoạn văn bắt đầu bằng chữ "Câu 1:", "Câu 2:"...</i></p>
+                        <input type="file" id="word-input" accept=".docx" style="display: none;"
+                            onchange="handleWordImport(this)">
+                        <button onclick="document.getElementById('word-input').click()" class="btn-action"
+                            style="background: #9b59b6; padding: 12px 20px; font-size: 16px;">📂 Chọn file Word
+                            (.docx)</button>
+                    </div>
+
+                    <div id="preview-area" style="display:none; margin-top: 20px;">
+                        <button onclick="saveImported()" class="btn-action"
+                            style="background: #27ae60; padding: 12px 20px; font-size: 16px; width: 100%;">✅ Xác nhận
+                            Lưu tất cả vào Ngân hàng</button>
+                        <div id="import-preview-list"
+                            style="margin-top: 15px; max-height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 15px; background: white;">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: #8e44ad; border-bottom: 2px solid #9b59b6; padding-bottom: 10px;">✏️
+                Biên tập Câu hỏi Tự luận</h3>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <div style="flex: 1;" class="input-group">
+                    <label>Môn học:</label>
+                    <input type="text" id="edit-subject" list="subject-list">
+                </div>
+                <div style="flex: 1;" class="input-group">
+                    <label>Chương / CLO:</label>
+                    <input type="text" id="edit-chapter" list="chapter-list">
+                </div>
+            </div>
+
+            <label style="font-weight: bold; display: block; margin-bottom: 5px; color: #2c3e50;">1. Nội dung câu
+                hỏi:</label>
+            <textarea id="tiny-question"></textarea>
+
+            <label style="font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; color: #27ae60;">2.
+                Đáp án / Hướng dẫn chấm (Tùy chọn):</label>
+            <textarea id="tiny-answer"></textarea>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn-action" onclick="closeEditModal()"
+                    style="background: #95a5a6; margin-right: 10px;">Hủy bỏ</button>
+                <button class="btn-action" onclick="saveEdit()" style="background: #27ae60;">💾 Lưu Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">Đang tải...</p>
+    </div>
+
+    <script>
+        const dbTuluan = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tuluan" });
+
+        let importedData = [];
+        let editingId = null;
+
+        // BIẾN CHO PHÂN TRANG
+        let currentPage = 1;
+        const itemsPerPage = 15; // Hiển thị 15 câu 1 trang
+        let currentFilteredList = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'start.html';
+            await updateFilterDropdowns();
+            loadData(true);
+        });
+
+        async function updateFilterDropdowns() {
+            const list = await dbTuluan.getItem('questions') || [];
+
+            const subjects = [...new Set(list.map(q => q.subject).filter(Boolean))];
+            const chapters = [...new Set(list.map(q => q.chapter).filter(Boolean))];
+
+            document.getElementById('subject-list').innerHTML = subjects.map(s => `<option value="${s}">`).join('');
+            document.getElementById('chapter-list').innerHTML = chapters.map(c => `<option value="${c}">`).join('');
+
+            const subjSelect = document.getElementById('filter-subject');
+            const currentSubj = subjSelect.value;
+            subjSelect.innerHTML = `<option value="">📚 Tất cả Môn học</option>` + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            if (subjects.includes(currentSubj)) subjSelect.value = currentSubj;
+
+            updateChapterDropdown(list);
+        }
+
+        function updateChapterDropdown(list) {
+            const filterSubj = document.getElementById('filter-subject').value;
+            const relevantQs = filterSubj ? list.filter(q => q.subject === filterSubj) : list;
+            const chapters = [...new Set(relevantQs.map(q => q.chapter).filter(Boolean))];
+
+            const chapSelect = document.getElementById('filter-chapter');
+            const currentChap = chapSelect.value;
+            chapSelect.innerHTML = `<option value="">📑 Tất cả Chương/CLO</option>` + chapters.map(c => `<option value="${c}">${c}</option>`).join('');
+            if (chapters.includes(currentChap)) chapSelect.value = currentChap;
+        }
+
+        async function onSubjectFilterChange() {
+            const list = await dbTuluan.getItem('questions') || [];
+            document.getElementById('filter-chapter').value = "";
+            updateChapterDropdown(list);
+            loadData(true);
+        }
+
+        // HÀM XỬ LÝ LỌC DỮ LIỆU
+        async function loadData(resetPage = false) {
+            if (resetPage) currentPage = 1;
+
+            const list = await dbTuluan.getItem('questions') || [];
+            const searchTxt = document.getElementById('search-q').value.toLowerCase();
+            const filterSubj = document.getElementById('filter-subject').value;
+            const filterChap = document.getElementById('filter-chapter').value;
+            const filterStatus = document.getElementById('filter-status').value;
+
+            const filtered = list.filter(q => {
+                const matchTxt = (q.content + " " + (q.answer || "")).toLowerCase().includes(searchTxt);
+                const matchSubj = (filterSubj === "" || q.subject === filterSubj);
+                const matchChap = (filterChap === "" || q.chapter === filterChap);
+
+                let matchStatus = true;
+                if (filterStatus === "true") matchStatus = (q.isActive === true);
+                if (filterStatus === "false") matchStatus = (q.isActive === false);
+
+                return matchTxt && matchSubj && matchChap && matchStatus;
+            });
+
+            currentFilteredList = filtered.reverse(); // Sắp xếp câu mới nhập lên đầu
+            document.getElementById('stat-info').innerText = `Tìm thấy ${currentFilteredList.length} câu`;
+
+            renderTable();
+        }
+
+        // HÀM RENDER BẢNG VÀ XỬ LÝ ẨN HIỆN ĐÁP ÁN
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+
+            if (currentFilteredList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 30px; color: #7f8c8d;">Không tìm thấy câu hỏi nào phù hợp với bộ lọc.</td></tr>';
+                document.getElementById('pagination-container').innerHTML = '';
+                return;
+            }
+
+            // Thuật toán cắt mảng để phân trang
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = startIdx + itemsPerPage;
+            const paginatedData = currentFilteredList.slice(startIdx, endIdx);
+
+            tbody.innerHTML = paginatedData.map(q => {
+                const subj = q.subject || "Chưa phân loại";
+                const clo = q.chapter || "Chưa phân loại";
+                const isChecked = (q.isActive === false) ? '' : 'checked';
+                const statusTxt = (q.isActive === false) ? '<span class="status-text status-off">Đã khóa</span>' : '<span class="status-text status-on">Đang bật</span>';
+
+                // Nút thu gọn / mở rộng đáp án
+                let ansHTML = '';
+                if (q.answer && q.answer.trim() !== '') {
+                    ansHTML = `
+                        <button class="btn-toggle-ans" onclick="toggleAns('ans_${q.id}')">👁️ Hiển thị Hướng dẫn chấm / Đáp án</button>
+                        <div id="ans_${q.id}" class="ans-container">${q.answer}</div>
+                    `;
+                } else {
+                    ansHTML = `<div style="font-size:12px; color:#95a5a6; font-style:italic; margin-top: 5px;">(Chưa có hướng dẫn chấm)</div>`;
+                }
+
+                return `
+                <tr>
+                    <td class="text-center">
+                        <b>${q.id}</b><br>
+                        <span class="badge-subject">${subj}</span><br>
+                        <span class="badge-clo">${clo}</span>
+                    </td>
+                    <td>
+                        <div class="q-content-box"><b>Đề bài:</b><br>${q.content}</div>
+                        ${ansHTML}
+                    </td>
+                    <td class="text-center">
+                        <label class="switch">
+                            <input type="checkbox" ${isChecked} onchange="toggleActive('${q.id}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        ${statusTxt}
+                    </td>
+                    <td class="text-center">
+                        <button onclick="editQ('${q.id}')" class="btn-action" style="background:#f39c12; width: 100%; margin-bottom: 5px; padding: 6px;">✏️ Sửa</button>
+                        <button onclick="deleteQ('${q.id}')" class="btn-action" style="background:#e74c3c; width: 100%; padding: 6px;">🗑 Xóa</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            renderPagination();
+
+            // Yêu cầu MathJax vẽ lại công thức cho trang mới
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetClear();
+                MathJax.typesetPromise();
+            }
+        }
+
+        // HÀM MỞ/ĐÓNG ĐÁP ÁN BẰNG JAVASCRIPT
+        function toggleAns(id) {
+            const el = document.getElementById(id);
+            if (el.style.display === 'none' || el.style.display === '') {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+
+        // HÀM TẠO NÚT PHÂN TRANG
+        function renderPagination() {
+            const totalPages = Math.ceil(currentFilteredList.length / itemsPerPage);
+            const container = document.getElementById('pagination-container');
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="pagination">';
+
+            if (currentPage > 1) {
+                html += `<button class="page-btn" onclick="changePage(${currentPage - 1})">« Trang trước</button>`;
+            }
+
+            // Thuật toán hiển thị các trang xung quanh trang hiện tại (Tránh làm tràn màn hình nếu có 100 trang)
+            let startP = Math.max(1, currentPage - 2);
+            let endP = Math.min(totalPages, currentPage + 2);
+
+            if (startP > 1) html += `<button class="page-btn" onclick="changePage(1)">1</button>${startP > 2 ? '<span style="padding: 8px; color:#8e44ad; font-weight:bold;">...</span>' : ''}`;
+
+            for (let i = startP; i <= endP; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+
+            if (endP < totalPages) html += `${endP < totalPages - 1 ? '<span style="padding: 8px; color:#8e44ad; font-weight:bold;">...</span>' : ''}<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn" onclick="changePage(${currentPage + 1})">Trang sau »</button>`;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function changePage(p) {
+            currentPage = p;
+            renderTable();
+            // Tự động cuộn lên đầu bảng cho mượt
+            document.querySelector('.content-area').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function toggleActive(id, newState) {
+            const list = await dbTuluan.getItem('questions');
+            const idx = list.findIndex(q => q.id === id);
+            if (idx > -1) {
+                list[idx].isActive = newState;
+                await dbTuluan.setItem('questions', list);
+                loadData(false); // Lưu lại vị trí trang hiện tại
+            }
+        }
+
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function handleWordImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+            document.getElementById('loading-overlay').style.display = 'flex';
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                mammoth.convertToHtml({ arrayBuffer: e.target.result }).then(result => {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = result.value;
+                    parseTuluan(temp);
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseTuluan(container) {
+            importedData = [];
+            let currentQ = null;
+
+            Array.from(container.children).forEach(el => {
+                const text = el.innerText.trim();
+                const isNewQuestion = /^Câu\s+\d+:/i.test(text);
+
+                if (isNewQuestion) {
+                    if (currentQ) importedData.push(currentQ);
+                    currentQ = { content: el.innerHTML, answer: "", isActive: true };
+                } else if (currentQ) {
+                    currentQ.content += el.outerHTML;
+                }
+            });
+
+            if (currentQ) importedData.push(currentQ);
+
+            document.getElementById('preview-area').style.display = 'block';
+            document.getElementById('import-preview-list').innerHTML = `
+                <div style="margin-bottom: 10px; color: #8e44ad; font-weight: bold;">Đã bóc tách được ${importedData.length} câu tự luận.</div>
+                ${importedData.map((q, idx) => `
+                    <div style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+                        ${q.content}
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('loading-overlay').style.display = 'none';
+
+            if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetClear();
+                MathJax.typesetPromise();
+            }
+        }
+
+        async function saveImported() {
+            let subj = document.getElementById('import-subject').value.trim() || "Chưa phân loại";
+            let chap = document.getElementById('import-chapter').value.trim() || "Chưa phân loại";
+
+            let list = await dbTuluan.getItem('questions') || [];
+            let maxId = list.length > 0 ? Math.max(...list.map(q => parseInt(q.id.replace('TL', '')))) : 0;
+
+            importedData.forEach(q => {
+                maxId++;
+                list.push({ id: 'TL' + maxId.toString().padStart(3, '0'), subject: subj, chapter: chap, ...q });
+            });
+
+            await dbTuluan.setItem('questions', list);
+            await updateFilterDropdowns();
+            alert("Đã lưu vào ngân hàng Tự luận thành công!");
+
+            document.getElementById('word-input').value = "";
+            document.getElementById('preview-area').style.display = 'none';
+            switchTab('list', document.querySelectorAll('.tab-btn')[0]);
+            loadData(true); // Về trang 1 sau khi nhập xong
+        }
+
+        const tinyConfig = {
+            height: 200, menubar: false,
+            plugins: ['advlist', 'lists', 'image', 'charmap', 'table', 'code', 'fullscreen'],
+            toolbar: 'bold italic underline | forecolor | alignleft aligncenter | bullist numlist | table image | fullscreen code'
+        };
+
+        async function editQ(id) {
+            editingId = id;
+            const list = await dbTuluan.getItem('questions');
+            const q = list.find(item => item.id === id);
+
+            document.getElementById('edit-subject').value = q.subject || "";
+            document.getElementById('edit-chapter').value = q.chapter || "";
+
+            tinymce.remove('#tiny-question');
+            tinymce.init({ ...tinyConfig, selector: '#tiny-question', setup: (ed) => ed.on('init', () => ed.setContent(q.content)) });
+
+            tinymce.remove('#tiny-answer');
+            tinymce.init({ ...tinyConfig, selector: '#tiny-answer', setup: (ed) => ed.on('init', () => ed.setContent(q.answer || "")) });
+
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            tinymce.remove('#tiny-question');
+            tinymce.remove('#tiny-answer');
+        }
+
+        async function saveEdit() {
+            const list = await dbTuluan.getItem('questions');
+            const idx = list.findIndex(q => q.id === editingId);
+            if (idx > -1) {
+                list[idx].subject = document.getElementById('edit-subject').value.trim() || "Chưa phân loại";
+                list[idx].chapter = document.getElementById('edit-chapter').value.trim() || "Chưa phân loại";
+
+                list[idx].content = tinymce.get('tiny-question').getContent();
+                list[idx].answer = tinymce.get('tiny-answer').getContent();
+
+                await dbTuluan.setItem('questions', list);
+                await updateFilterDropdowns();
+
+                closeEditModal();
+                loadData(false); // Sửa xong giữ nguyên trang hiện tại
+            }
+        }
+
+        async function deleteQ(id) {
+            if (confirm("Xóa vĩnh viễn câu tự luận này khỏi ngân hàng?")) {
+                let list = await dbTuluan.getItem('questions');
+                await dbTuluan.setItem('questions', list.filter(q => q.id !== id));
+                await updateFilterDropdowns();
+                loadData(false);
+            }
+        }
+    </script>
+</body>
+
+</html>

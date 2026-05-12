@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng quan Hệ thống - NV-SMART-EDU</title>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f0f2f5; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+        .main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f6; overflow: hidden; }
+        .topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .content-area { padding: 20px; flex: 1; overflow-y: auto; }
+        
+        /* DASHBOARD GRID TỔNG QUAN (Đã cập nhật cho 5 thẻ) */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #3498db; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .stat-info h3 { margin: 0; font-size: 25px; color: #2c3e50; }
+        .stat-info p { margin: 5px 0 0 0; color: #7f8c8d; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .stat-icon { font-size: 32px; opacity: 0.8; }
+
+        /* BỐ CỤC CHIA NỬA */
+        .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .left-col { display: flex; flex-direction: column; gap: 20px; }
+        
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .panel h4 { margin-top: 0; color: #34495e; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-size: 16px; }
+        
+        /* STYLE CHO THỐNG KÊ CHI TIẾT (KHÔNG DÙNG BIỂU ĐỒ) */
+        .detail-box { padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .detail-tnkq { background: #e8f5e9; border-left: 4px solid #27ae60; }
+        .detail-tl { background: #fbf7fc; border-left: 4px solid #9b59b6; }
+        .detail-mn { background: #fff8e1; border-left: 4px solid #f39c12; }
+        
+        .detail-title { font-weight: bold; font-size: 15px; margin-bottom: 5px; }
+        .detail-number { font-size: 20px; font-weight: bold; }
+        .detail-sub { font-size: 13px; color: #666; }
+
+        /* DANH SÁCH KỲ THI GỌN NHẸ - HIỆN ĐẠI */
+        .exam-list { display: flex; flex-direction: column; gap: 10px; }
+        .exam-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border: 1px solid #f0f0f0; border-radius: 8px; transition: 0.2s; background: #fafafa; }
+        .exam-item:hover { background: white; border-color: #3498db; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        .exam-meta { display: flex; align-items: center; gap: 10px; width: 120px; flex-shrink: 0; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; text-align: center; min-width: 55px; }
+        .bg-tnkq { background: #27ae60; }
+        .bg-tl { background: #9b59b6; }
+        .exam-date { font-size: 12px; color: #7f8c8d; }
+        
+        .exam-info { flex-grow: 1; overflow: hidden; }
+        .exam-name { font-weight: bold; color: #2c3e50; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+        .exam-subj { font-size: 12px; color: #95a5a6; }
+        
+        .exam-count { font-weight: bold; color: #3498db; font-size: 14px; background: #e8f4fd; padding: 5px 10px; border-radius: 6px; }
+
+        @media (max-width: 900px) {
+            .split-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <script src="libs/localforage.min.js"></script>
+</head>
+<body>
+
+    <div id="app-screen" class="app-container">
+        <aside class="sidebar" id="shared-sidebar"></aside>
+        <script src="sidebar.js"></script>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h3 style="color: #2c3e50; margin: 0;">📊 Bảng điều khiển Hệ thống</h3>
+            </header>
+
+            <section class="content-area">
+                
+                <div class="dash-grid">
+                    <div class="stat-card" style="border-color: #27ae60;">
+                        <div class="stat-info">
+                            <h3 id="count-tnkq-q">0</h3>
+                            <p>Câu Trắc nghiệm</p>
+                        </div>
+                        <div class="stat-icon">☑️</div>
+                    </div>
+                    
+                    <div class="stat-card" style="border-color: #9b59b6;">
+                        <div class="stat-info">
+                            <h3 id="count-tl-q">0</h3>
+                            <p>Câu Tự luận</p>
+                        </div>
+                        <div class="stat-icon">✍️</div>
+                    </div>
+
+                    <div class="stat-card" style="border-color: #f39c12;">
+                        <div class="stat-info">
+                            <h3 id="count-mn-q">0</h3>
+                            <p>Dữ liệu Khối M-N</p>
+                        </div>
+                        <div class="stat-icon">🎭</div>
+                    </div>
+
+                    <div class="stat-card" style="border-color: #e74c3c;">
+                        <div class="stat-info">
+                            <h3 id="count-total-exams">0</h3>
+                            <p>Kỳ thi xuất bản</p>
+                        </div>
+                        <div class="stat-icon">🖨️</div>
+                    </div>
+
+                    <div class="stat-card" style="border-color: #34495e; background: #f8f9fa;">
+                        <div class="stat-info">
+                            <h3 id="count-storage" style="color: #34495e;">Đang tính...</h3>
+                            <p>Dung lượng hệ thống</p>
+                        </div>
+                        <div class="stat-icon">💾</div>
+                    </div>
+                </div>
+
+                <div class="split-layout">
+                    <div class="left-col">
+                        <div class="panel">
+                            <h4>📚 Phân tích Ngân hàng Đề thi</h4>
+                            
+                            <div class="detail-box detail-tnkq">
+                                <div>
+                                    <div class="detail-title" style="color: #27ae60;">Ngân hàng Trắc nghiệm (TNKQ)</div>
+                                    <div class="detail-sub" id="detail-tnkq-sub">Đang tải...</div>
+                                </div>
+                                <div class="detail-number" style="color: #27ae60;" id="detail-tnkq-num">0</div>
+                            </div>
+
+                            <div class="detail-box detail-tl">
+                                <div>
+                                    <div class="detail-title" style="color: #8e44ad;">Ngân hàng Tự luận</div>
+                                    <div class="detail-sub" id="detail-tl-sub">Đang tải...</div>
+                                </div>
+                                <div class="detail-number" style="color: #8e44ad;" id="detail-tl-num">0</div>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <h4>🔍 Phân tích chi tiết Khối M - N</h4>
+                            <div id="mn-details">
+                                <div style="text-align:center; color:#7f8c8d;">Đang phân tích dữ liệu...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h4>🕒 10 Kỳ thi được xuất bản gần đây</h4>
+                        <div class="exam-list" id="recent-exams-list">
+                            <div style="text-align:center; color:#7f8c8d; padding: 20px;">Đang tải dữ liệu...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // KẾT NỐI DATABASE
+        const dbTNKQ_Bank = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tnkq" });
+        const dbTNKQ_Exam = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "lich_su_ky_thi" });
+        
+        const dbTL_Bank = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tuluan" });
+        const dbTL_Exam = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "lich_su_ky_thi_tuluan" });
+
+        const dbMN_N = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_n" });
+        const dbMN_M = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhangdekhoi_m" });
+        const dbMN_ExamN = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_n" });
+        const dbMN_ExamM = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "danhsachde_m" });
+
+        const sysDB = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "system" });
+
+        window.onload = async () => {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'start.html';
+            await loadDashboardData();
+        };
+
+        // HÀM TÍNH TOÁN DUNG LƯỢNG CHÍNH XÁC (TÍNH BẰNG BYTE CỦA BLOB)
+        async function getDbSizeInBytes(dbInstance) {
+            let totalBytes = 0;
+            await dbInstance.iterate((value, key) => {
+                const jsonStr = JSON.stringify(value);
+                // Tạo Blob để đo lường chính xác dung lượng kể cả ký tự UTF-8 (Tiếng Việt)
+                const blob = new Blob([jsonStr]);
+                totalBytes += blob.size;
+            });
+            return totalBytes;
+        }
+
+        async function loadDashboardData() {
+            // ==========================================
+            // 1. TÍNH TOÁN DUNG LƯỢNG LƯU TRỮ TOÀN HỆ THỐNG
+            // ==========================================
+            let totalSystemBytes = 0;
+            const allDatabases = [
+                dbTNKQ_Bank, dbTNKQ_Exam, dbTL_Bank, dbTL_Exam, 
+                dbMN_N, dbMN_M, dbMN_ExamN, dbMN_ExamM, sysDB
+            ];
+            
+            for (let db of allDatabases) {
+                totalSystemBytes += await getDbSizeInBytes(db);
+            }
+
+            let sizeDisplay = "";
+            if (totalSystemBytes < 1024) {
+                sizeDisplay = totalSystemBytes + " Bytes";
+            } else if (totalSystemBytes < 1024 * 1024) {
+                sizeDisplay = (totalSystemBytes / 1024).toFixed(2) + " KB";
+            } else {
+                sizeDisplay = (totalSystemBytes / (1024 * 1024)).toFixed(2) + " MB";
+            }
+            
+            const storageEl = document.getElementById('count-storage');
+            storageEl.innerText = sizeDisplay;
+            // Đổi màu cảnh báo nếu dung lượng quá lớn (> 50MB thì hiện đỏ cảnh báo)
+            if (totalSystemBytes > 50 * 1024 * 1024) storageEl.style.color = '#e74c3c';
+
+            // ==========================================
+            // 2. ĐẾM DỮ LIỆU & TÍNH SỐ MÔN HỌC TNKQ & TỰ LUẬN
+            // ==========================================
+            const tnkqQs = await dbTNKQ_Bank.getItem('questions') || [];
+            const tlQs = await dbTL_Bank.getItem('questions') || [];
+            
+            const tnkqCount = tnkqQs.length;
+            const tlCount = tlQs.length;
+
+            const tnkqSubjects = [...new Set(tnkqQs.map(q => q.subject).filter(Boolean))];
+            const tlSubjects = [...new Set(tlQs.map(q => q.subject).filter(Boolean))];
+
+            document.getElementById('count-tnkq-q').innerText = tnkqCount;
+            document.getElementById('detail-tnkq-num').innerText = tnkqCount + " câu";
+            document.getElementById('detail-tnkq-sub').innerHTML = `Gồm <b>${tnkqSubjects.length}</b> môn học quản lý.`;
+
+            document.getElementById('count-tl-q').innerText = tlCount;
+            document.getElementById('detail-tl-num').innerText = tlCount + " câu";
+            document.getElementById('detail-tl-sub').innerHTML = `Gồm <b>${tlSubjects.length}</b> môn học quản lý.`;
+
+
+            // ==========================================
+            // 3. THUẬT TOÁN ĐẾM CHI TIẾT KHỐI M & N
+            // ==========================================
+            let mCount = 0;
+            await dbMN_M.iterate((value, key) => {
+                if (Array.isArray(value)) mCount += value.length;
+                else mCount += 1;
+            });
+
+            let nCounts = {};
+            let nCountTotal = 0;
+            
+            await dbMN_N.iterate((value, key) => {
+                const processItem = (item) => {
+                    let type = item.type || item.loai || item.phanloai || item.category;
+                    if (!type) {
+                        if (key !== 'questions' && key !== 'nganhang_n' && key !== 'data') type = key;
+                        else type = 'Chưa phân loại';
+                    }
+                    type = type.toString().trim();
+                    const lowerType = type.toLowerCase();
+                    if (lowerType.includes('cao độ') || lowerType === 'caodo') type = 'Cao độ';
+                    else if (lowerType.includes('tiết tấu') || lowerType === 'tiettau') type = 'Tiết tấu';
+                    else if (lowerType.includes('hát') || lowerType === 'hat') type = 'Hát';
+                    else if (lowerType.includes('xướng') || lowerType === 'xuongam') type = 'Xướng âm';
+                    else type = type.charAt(0).toUpperCase() + type.slice(1);
+
+                    nCounts[type] = (nCounts[type] || 0) + 1;
+                    nCountTotal++;
+                };
+
+                if (Array.isArray(value)) value.forEach(processItem);
+                else processItem(value);
+            });
+
+            const mnTotal = mCount + nCountTotal;
+            document.getElementById('count-mn-q').innerText = mnTotal;
+
+            let mnHTML = `
+                <div class="detail-box detail-mn" style="margin-bottom:10px;">
+                    <div>
+                        <div class="detail-title" style="color: #d35400;">🎭 Khối M (Kể chuyện)</div>
+                    </div>
+                    <div class="detail-number" style="color: #d35400;">${mCount} đề</div>
+                </div>
+                <div style="background: #e8f4fd; border-left: 4px solid #3498db; padding: 15px; border-radius: 8px;">
+                    <div class="detail-title" style="color: #2980b9;">🎵 Khối N (Âm nhạc) - ${nCountTotal} mẫu</div>
+                    <ul style="margin-left: 20px; margin-top: 10px; color: #34495e; font-size: 14px;">
+            `;
+            
+            for (let type in nCounts) {
+                mnHTML += `<li style="margin-bottom: 5px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">Loại <b>${type}</b>: <span style="color:#27ae60; font-weight:bold; float: right;">${nCounts[type]}</span></li>`;
+            }
+            if (Object.keys(nCounts).length === 0) mnHTML += `<li>Chưa có dữ liệu Khối N</li>`;
+            
+            mnHTML += `</ul></div>`;
+            document.getElementById('mn-details').innerHTML = mnHTML;
+
+
+            // ==========================================
+            // 4. TỔNG HỢP LỊCH SỬ KỲ THI (GIAO DIỆN LIST)
+            // ==========================================
+            let allExams = [];
+
+            const tnkqExKeys = await dbTNKQ_Exam.keys();
+            for (let k of tnkqExKeys) {
+                let ex = await dbTNKQ_Exam.getItem(k);
+                let shortDate = ex.date.split(' ')[0] || ex.date;
+                allExams.push({ ...ex, typeLabel: 'TNKQ', typeClass: 'bg-tnkq', shortDate: shortDate, trueDate: new Date(ex.id) });
+            }
+
+            const tlExKeys = await dbTL_Exam.keys();
+            for (let k of tlExKeys) {
+                let ex = await dbTL_Exam.getItem(k);
+                let shortDate = ex.date.split(' ')[0] || ex.date;
+                allExams.push({ ...ex, typeLabel: 'TỰ LUẬN', typeClass: 'bg-tl', shortDate: shortDate, trueDate: new Date(ex.id) });
+            }
+
+            document.getElementById('count-total-exams').innerText = allExams.length;
+            allExams.sort((a, b) => b.trueDate - a.trueDate);
+            
+            const topExams = allExams.slice(0, 10);
+            const listContainer = document.getElementById('recent-exams-list');
+            
+            if (topExams.length === 0) {
+                listContainer.innerHTML = '<div style="text-align:center; color:#7f8c8d; padding: 20px;">Chưa có kỳ thi nào được xuất bản.</div>';
+            } else {
+                listContainer.innerHTML = topExams.map(ex => {
+                    const qCount = ex.baseQs ? ex.baseQs.length : 0;
+                    return `
+                        <div class="exam-item">
+                            <div class="exam-meta">
+                                <span class="badge ${ex.typeClass}">${ex.typeLabel}</span>
+                                <span class="exam-date">${ex.shortDate}</span>
+                            </div>
+                            <div class="exam-info">
+                                <div class="exam-name" title="${ex.name}">${ex.name}</div>
+                                <div class="exam-subj">📚 Môn: ${ex.subject}</div>
+                            </div>
+                            <div class="exam-count" title="Số lượng câu hỏi">
+                                ${qCount} câu
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    </script>
+</body>
+</html>

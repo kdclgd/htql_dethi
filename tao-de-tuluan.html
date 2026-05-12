@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổ chức Thi Tự luận - NV-SMART-EDU</title>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f0f2f5; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+                
+        .main-content { flex: 1; display: flex; flex-direction: column; background: #f4f7f6; overflow: hidden; }
+        .topbar { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .content-area { padding: 20px; flex: 1; overflow-y: auto; }
+        
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: #eee; margin-right: 5px; border-radius: 5px 5px 0 0; font-size: 15px; }
+        .tab-btn.active { background: white; border: 1px solid #ddd; border-bottom: none; font-weight: bold; color: #9b59b6; }
+        .tab-content { display: none; border: 1px solid #ddd; padding: 20px; background: white; border-radius: 0 5px 5px 5px; }
+        .tab-content.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f8f9fa; color: #2c3e50; }
+        .text-left { text-align: left; }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #2c3e50; }
+        .input-group input, .input-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; outline: none; }
+        .btn-action { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+
+        #print-container { display: none; background: white; }
+        
+        @media print {
+            .app-container { display: none !important; }
+            #print-container { display: block !important; padding: 0; color: black; }
+            
+            @page { size: A4; margin: 15mm 15mm 20mm 15mm; }
+            body { counter-reset: page; }
+            
+            #print-container *:not(mjx-container):not(mjx-container *) {
+                font-family: 'Times New Roman', Times, serif !important;
+                font-size: 13pt !important;
+                line-height: 1.3 !important;
+                background-color: transparent !important; 
+                color: black !important; 
+            }
+            mjx-container svg { display: inline-block; vertical-align: middle; color: #000 !important; }
+            .page-break { page-break-after: always; }
+            .print-q { margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid; text-align: justify; }
+            .print-q img { max-width: 100%; height: auto; margin: 5px 0; }
+            .css-page-number::after { content: counter(page); }
+            .rubric-box { border-left: 2px solid #000; padding-left: 10px; margin-top: 5px; font-style: italic; }
+            
+            .print-matrix-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12pt !important; }
+            .print-matrix-table th, .print-matrix-table td { border: 1px solid black !important; padding: 6px !important; text-align: center; }
+            .print-matrix-table th { background: #f0f0f0 !important; font-weight: bold; }
+        }
+    </style>
+
+    <script src="libs/localforage.min.js"></script>
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$']] }, svg: { fontCache: 'global', scale: 0.93 }, startup: { typeset: false } };
+    </script>
+    <script id="MathJax-script" async src="libs/tex-mml-svg.js"></script>
+</head>
+<body>
+
+    <div id="app-screen" class="app-container">
+        <aside class="sidebar" id="shared-sidebar"></aside>
+        <script src="sidebar.js"></script>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h3 style="color: #8e44ad;">Tổ chức Kỳ thi Tự luận</h3>
+            </header>
+
+            <section class="content-area">
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="switchTab('create', this)">⚙️ Tạo Đề Tự luận</button>
+                    <button class="tab-btn" onclick="switchTab('history', this)">📜 Lịch sử Đề thi</button>
+                </div>
+
+                <div id="tab-create" class="tab-content active">
+                    <div class="card" style="border-left: 4px solid #9b59b6; background: #fbf7fc;">
+                        <h4 style="color: #8e44ad; margin-bottom: 15px;">1. Khai báo Tiêu đề Đề thi</h4>
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div style="flex: 1;" class="input-group">
+                                <label>Sở GD&ĐT / Cụm thi:</label>
+                                <input type="text" id="exam-dept" oninput="saveHeaderConfig()">
+                            </div>
+                            <div style="flex: 1;" class="input-group">
+                                <label>Tên Trường:</label>
+                                <input type="text" id="exam-school" oninput="saveHeaderConfig()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px;">
+                            <div style="flex: 2;" class="input-group">
+                                <label>Tên Kỳ thi / Đợt thi:</label>
+                                <input type="text" id="exam-name" oninput="saveHeaderConfig()">
+                            </div>
+                            <div style="flex: 1;" class="input-group">
+                                <label>Thời gian làm bài (phút):</label>
+                                <input type="number" id="exam-time" value="90" oninput="saveHeaderConfig()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4 style="color: #8e44ad; margin-bottom: 15px;">2. Chọn Môn học & Thiết lập Ma trận</h4>
+                        <div class="input-group">
+                            <select id="select-subject" onchange="renderMatrixTable()"></select>
+                        </div>
+                        <table id="matrix-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th class="text-left">Chương / CLO</th>
+                                    <th width="100">Trong kho</th>
+                                    <th width="120">Số câu lấy</th>
+                                    <th width="150">Điểm mỗi câu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrix-body"></tbody>
+                            <tfoot>
+                                <tr style="background: #fdf5e6;">
+                                    <th class="text-left" style="color: #d35400;">TỔNG CỘNG:</th>
+                                    <th>-</th>
+                                    <th id="total-selected-qs">0 câu</th>
+                                    <th id="total-score">0.0 điểm</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div id="matrix-actions" style="margin-top: 20px; display: none; gap: 10px; justify-content: flex-end;">
+                            <button onclick="saveMatrixConfig()" class="btn-action" style="background: #9b59b6;">💾 Lưu Ma trận</button>
+                            <button onclick="generateBaseExam()" class="btn-action" style="background: #27ae60;">🎲 Bốc Đề Gốc</button>
+                        </div>
+                    </div>
+
+                    <div id="step-shuffle" class="card" style="display: none; border-top: 5px solid #f39c12;">
+                        <h4 style="color: #f39c12; margin-bottom: 10px;">3. Xuất bản Đề thi</h4>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 15px;"><i>(Ghi chú: Đề thi và Hướng dẫn chấm + Ma trận sẽ được in tách biệt nhau)</i></p>
+                        <div style="display: flex; gap: 15px; align-items: flex-end;">
+                            <div style="flex: 1;">
+                                <label style="font-weight: bold; font-size: 14px;">Số lượng Mã đề:</label>
+                                <input type="number" id="num-exams" value="1" min="1" style="width: 100%; padding: 10px; text-align: center;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-weight: bold; font-size: 14px;">Mã đề bắt đầu:</label>
+                                <input type="number" id="start-code" value="101" style="width: 100%; padding: 10px; text-align: center;">
+                            </div>
+                            <div style="flex: 2;">
+                                <button onclick="shuffleSaveAndPrint()" class="btn-action" style="background: #e67e22; width: 100%; padding: 12px; font-size: 16px;">🖨️ LƯU & IN ĐỀ TỰ LUẬN</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-history" class="tab-content">
+                    <table style="margin-top: 0;">
+                        <thead>
+                            <tr>
+                                <th>Ngày tạo</th>
+                                <th class="text-left">Tên Kỳ thi</th>
+                                <th>Môn học</th>
+                                <th>Thời gian</th>
+                                <th>Số câu</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="print-container"></div>
+
+    <script>
+        const dbTuluan = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "nganhang_tuluan" });
+        const dbExamsTuluan = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "lich_su_ky_thi_tuluan" });
+        const dbMatrixTuluan = localforage.createInstance({ name: "NgânHàngĐềApp", storeName: "cau_hinh_ma_tran_tuluan" });
+        
+        let allQuestions = [];
+        let baseExamQuestions = [];
+        let currentMatrixUsed = []; 
+
+        window.onload = async () => {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'start.html';
+            loadHeaderConfig();
+            const rawQs = await dbTuluan.getItem('questions') || [];
+            allQuestions = rawQs.filter(q => q.isActive !== false);
+            const subjects = [...new Set(allQuestions.map(q => q.subject).filter(Boolean))];
+            const selectSubj = document.getElementById('select-subject');
+            selectSubj.innerHTML = '<option value="">-- Vui lòng chọn môn học --</option>' + 
+                                   subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            loadHistory();
+        };
+
+        function saveHeaderConfig() {
+            localStorage.setItem('saved_exam_dept_tl', document.getElementById('exam-dept').value);
+            localStorage.setItem('saved_exam_school_tl', document.getElementById('exam-school').value);
+            localStorage.setItem('saved_exam_name_tl', document.getElementById('exam-name').value);
+            localStorage.setItem('saved_exam_time_tl', document.getElementById('exam-time').value);
+        }
+
+        function loadHeaderConfig() {
+            if(localStorage.getItem('saved_exam_dept_tl')) document.getElementById('exam-dept').value = localStorage.getItem('saved_exam_dept_tl');
+            if(localStorage.getItem('saved_exam_school_tl')) document.getElementById('exam-school').value = localStorage.getItem('saved_exam_school_tl');
+            if(localStorage.getItem('saved_exam_name_tl')) document.getElementById('exam-name').value = localStorage.getItem('saved_exam_name_tl');
+            if(localStorage.getItem('saved_exam_time_tl')) document.getElementById('exam-time').value = localStorage.getItem('saved_exam_time_tl');
+        }
+
+        function switchTab(tab, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+            if(tab === 'history') loadHistory();
+        }
+
+        async function renderMatrixTable() {
+            const subj = document.getElementById('select-subject').value;
+            if (!subj) {
+                document.getElementById('matrix-table').style.display = 'none';
+                document.getElementById('matrix-actions').style.display = 'none';
+                document.getElementById('step-shuffle').style.display = 'none';
+                return;
+            }
+            const savedMatrix = await dbMatrixTuluan.getItem(subj) || {};
+            if (savedMatrix['_examTime']) document.getElementById('exam-time').value = savedMatrix['_examTime'];
+            const qsInSubj = allQuestions.filter(q => q.subject === subj);
+            const chapters = [...new Set(qsInSubj.map(q => q.chapter || "Chưa phân loại"))];
+            document.getElementById('matrix-table').style.display = 'table';
+            document.getElementById('matrix-actions').style.display = 'flex';
+            document.getElementById('step-shuffle').style.display = 'none';
+            document.getElementById('matrix-body').innerHTML = chapters.map(chap => {
+                const maxCount = qsInSubj.filter(q => (q.chapter || "Chưa phân loại") === chap).length;
+                let defC = 0, defS = 1.0;
+                if (savedMatrix[chap]) { defC = savedMatrix[chap].count || 0; defS = savedMatrix[chap].score || 1.0; }
+                if (defC > maxCount) defC = maxCount;
+                return `<tr>
+                    <td class="text-left">${chap}</td>
+                    <td style="color: #2980b9; font-weight: bold;">${maxCount}</td>
+                    <td><input type="number" class="matrix-input matrix-count" data-chap="${chap}" data-max="${maxCount}" value="${defC}" min="0" max="${maxCount}" oninput="updateTotalQs()" style="width: 70px; text-align: center;"></td>
+                    <td><input type="number" class="matrix-input matrix-score" data-chap="${chap}" value="${defS}" min="0" step="0.25" oninput="updateTotalQs()" style="width: 70px; text-align: center;"></td>
+                </tr>`;
+            }).join('');
+            updateTotalQs(); 
+        }
+
+        function updateTotalQs() {
+            let totalQ = 0, totalS = 0;
+            document.querySelectorAll('#matrix-body tr').forEach(row => {
+                let cInp = row.querySelector('.matrix-count'), sInp = row.querySelector('.matrix-score');
+                let val = parseInt(cInp.value) || 0, score = parseFloat(sInp.value) || 0;
+                totalQ += val; totalS += (val * score);
+            });
+            document.getElementById('total-selected-qs').innerText = totalQ + " câu";
+            document.getElementById('total-score').innerText = totalS.toFixed(2) + " điểm";
+        }
+
+        async function saveMatrixConfig() {
+            const subj = document.getElementById('select-subject').value;
+            if (!subj) return;
+            const matrixConfig = {};
+            document.querySelectorAll('#matrix-body tr').forEach(row => {
+                let chap = row.querySelector('.matrix-count').getAttribute('data-chap');
+                matrixConfig[chap] = { 
+                    count: parseInt(row.querySelector('.matrix-count').value) || 0, 
+                    score: parseFloat(row.querySelector('.matrix-score').value) || 0 
+                };
+            });
+            matrixConfig['_examTime'] = document.getElementById('exam-time').value;
+            await dbMatrixTuluan.setItem(subj, matrixConfig);
+            alert(`✅ Đã lưu ma trận môn: ${subj}`);
+        }
+
+        function generateBaseExam() {
+            const subj = document.getElementById('select-subject').value;
+            const examName = document.getElementById('exam-name').value.trim();
+            if (!examName) { alert("Vui lòng nhập Tên Kỳ thi!"); return; }
+            baseExamQuestions = [];
+            currentMatrixUsed = []; 
+
+            document.querySelectorAll('#matrix-body tr').forEach(row => {
+                let chap = row.querySelector('.matrix-count').getAttribute('data-chap');
+                let count = parseInt(row.querySelector('.matrix-count').value) || 0;
+                let score = parseFloat(row.querySelector('.matrix-score').value) || 0;
+                
+                if (count > 0) {
+                    currentMatrixUsed.push({ chap, count, score });
+                    const pool = allQuestions.filter(q => q.subject === subj && (q.chapter || "Chưa phân loại") === chap);
+                    const shuffledPool = pool.sort(() => 0.5 - Math.random());
+                    let picked = shuffledPool.slice(0, count).map(q => ({ ...q, assignedScore: score }));
+                    baseExamQuestions = baseExamQuestions.concat(picked);
+                }
+            });
+            if (baseExamQuestions.length === 0) { alert("Chưa chọn câu hỏi!"); return; }
+            document.getElementById('step-shuffle').style.display = 'block';
+            alert(`🎲 Đã bốc xong ${baseExamQuestions.length} câu.`);
+        }
+
+        async function shuffleSaveAndPrint() {
+            const numExams = parseInt(document.getElementById('num-exams').value);
+            const startCode = parseInt(document.getElementById('start-code').value);
+            const examName = document.getElementById('exam-name').value.trim();
+            const time = document.getElementById('exam-time').value.trim();
+            const subject = document.getElementById('select-subject').value;
+
+            const generatedExams = [];
+            for (let i = 0; i < numExams; i++) {
+                const code = startCode + i;
+                generatedExams.push({ code, questions: [...baseExamQuestions] });
+            }
+
+            const examRecord = {
+                id: Date.now(), name: examName, subject: subject,
+                dept: document.getElementById('exam-dept').value.trim() || "SỞ GIÁO DỤC VÀ ĐÀO TẠO",
+                school: document.getElementById('exam-school').value.trim() || "TRƯỜNG ...................",
+                time: time, date: new Date().toLocaleString('vi-VN'),
+                baseQs: baseExamQuestions, generated: generatedExams,
+                matrix: currentMatrixUsed 
+            };
+            await dbExamsTuluan.setItem(examRecord.id.toString(), examRecord);
+            doPrint(examRecord);
+        }
+
+        async function loadHistory() {
+            const keys = await dbExamsTuluan.keys();
+            const body = document.getElementById('history-body');
+            body.innerHTML = '';
+            const records = [];
+            for (let key of keys) records.push(await dbExamsTuluan.getItem(key));
+            records.sort((a, b) => b.id - a.id).forEach(ex => {
+                body.innerHTML += `<tr>
+                    <td>${ex.date}</td>
+                    <td class="text-left" style="color: #8e44ad;"><b>${ex.name}</b></td>
+                    <td>${ex.subject}</td>
+                    <td>${ex.time}p</td>
+                    <td><b>${ex.baseQs.length}</b></td>
+                    <td style="white-space: nowrap;">
+                        <button onclick="viewExam('${ex.id}')" style="background:#9b59b6; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ In đề & HDC</button>
+                        <button onclick="deleteExam('${ex.id}')" style="background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-left:5px;">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function viewExam(id) {
+            const ex = await dbExamsTuluan.getItem(id.toString());
+            doPrint(ex);
+        }
+
+        async function deleteExam(id) {
+            if(confirm("Xóa vĩnh viễn?")) { await dbExamsTuluan.removeItem(id.toString()); loadHistory(); }
+        }
+
+        // --- HÀM RENDER BẢN IN ---
+        async function doPrint(examRecord) {
+            let html = '';
+            examRecord.generated.forEach(ex => {
+                // PHẦN 1: IN ĐỀ THI
+                html += `<div class="page-break">
+                    <table style="width: 100%; border: none; border-collapse: collapse;">
+                        <thead style="display: table-header-group;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+                        <tfoot style="display: table-footer-group;">
+                            <tr><td style="border: none; padding: 0;">
+                                <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; font-family: 'Times New Roman', serif; font-size: 11pt; font-weight: bold; font-style: italic;">
+                                    <span>Môn: ${examRecord.subject} - Mã đề: ${ex.code}</span>
+                                </div>
+                            </td></tr>
+                        </tfoot>
+                        <tbody>
+                            <tr><td style="border: none; padding: 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <div style="width: 40%; text-align: center;">
+                                        <div style="font-size: 13pt;">${examRecord.dept.toUpperCase()}</div>
+                                        <div style="font-size: 13pt; font-weight: bold; text-decoration: underline;">${examRecord.school.toUpperCase()}</div>
+                                    </div>
+                                    <div style="width: 60%; text-align: center;">
+                                        <div style="font-size: 14pt; font-weight: bold;">${examRecord.name.toUpperCase()}</div>
+                                        <div style="font-size: 14pt; font-weight: bold;">Bài thi Tự luận: ${examRecord.subject.toUpperCase()}</div>
+                                        <div style="font-size: 13pt; font-style: italic;">Thời gian làm bài: ${examRecord.time} phút</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="text-align: right; font-size: 13pt; font-weight: bold; margin-bottom: 10px;">Mã đề thi: ${ex.code}</div>
+                                
+                                <div style="font-size: 13pt; display: flex; align-items: flex-end; margin-bottom: 25px;">
+                                    <b>Họ, tên thí sinh: </b> <span style="border-bottom: 1px dotted #000; flex-grow: 1; margin: 0 10px;"></span>
+                                    <b>Số báo danh: </b> <span style="border-bottom: 1px dotted #000; width: 150px; margin-left: 10px;"></span>
+                                </div>
+
+                                `;
+                
+                ex.questions.forEach((q, idx) => {
+                    let contentHTML = q.content.trim().replace(/^(<p>(\s|&nbsp;|<br>)*<\/p>\s*)+/gi, '');
+                    let scoreTxt = q.assignedScore > 0 ? ` (${q.assignedScore} điểm): ` : `: `;
+                    if (contentHTML.toLowerCase().startsWith('<p>')) {
+                        contentHTML = contentHTML.replace(/^<p[^>]*>/i, `<p style="display:inline; margin:0;"><b>Câu ${idx+1}${scoreTxt}</b> `);
+                    } else {
+                        contentHTML = `<p style="display:inline; margin:0;"><b>Câu ${idx+1}${scoreTxt}</b> ` + contentHTML + `</p>`;
+                    }
+                    html += `<div class="print-q">${contentHTML}</div>`;
+                });
+                
+                html += `       <div style="text-align: center; font-weight: bold; margin-top: 40px; font-size: 13pt;">----------- HẾT -----------</div>
+                                <div style="text-align: center; font-style: italic; font-size: 12pt; margin-top: 5px;">(Thí sinh không được sử dụng tài liệu. Giám thị không giải thích gì thêm)</div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>`;
+
+                // PHẦN 2: IN HỒ SƠ CHẤM THI
+                html += `<div class="page-break">
+                    <table style="width: 100%; border: none; border-collapse: collapse;">
+                        <thead style="display: table-header-group;"><tr><td style="border: none; padding: 0;"></td></tr></thead>
+                        <tfoot style="display: table-footer-group;">
+                            <tr><td style="border: none; padding: 0;">
+                                <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; margin-top: 20px; padding-top: 5px;  font-style: italic;">
+                                    <span>HỒ SƠ CHẤM THI - Môn: ${examRecord.subject} - Mã đề: ${ex.code}</span>
+                                </div>
+                            </td></tr>
+                        </tfoot>
+                        <tbody>
+                            <tr><td style="border: none; padding: 0;">
+                                <div style="text-align: center; margin-bottom: 30px;">
+                                    <h2 style="margin-bottom: 5px;">HỒ SƠ: MA TRẬN & HƯỚNG DẪN CHẤM THI</h2>
+                                    <div style="font-size: 14pt; font-weight: bold;">Môn: ${examRecord.subject} - Mã đề: ${ex.code}</div>
+                                </div>
+                                
+                                <div style="font-weight: bold; text-decoration: underline; margin-bottom: 10px; font-size: 13pt; page-break-after: avoid; break-after: avoid;">I. MA TRẬN ĐỀ THI:</div>
+                                <table class="print-matrix-table" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <thead><tr><th>STT</th><th>Chương / Chuẩn đầu ra (CLO)</th><th>Số câu</th><th>Điểm số</th><th>Tỷ lệ (%)</th></tr></thead>
+                                    <tbody>
+                                        ${(examRecord.matrix || []).map((m, i) => {
+                                            const totalS = examRecord.matrix.reduce((sum, item) => sum + (item.count * item.score), 0);
+                                            const percent = (((m.count * m.score) / totalS) * 100).toFixed(1);
+                                            return `<tr><td>${i+1}</td><td style="text-align:left;">${m.chap}</td><td>${m.count}</td><td>${(m.count * m.score).toFixed(2)}</td><td>${percent}%</td></tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="font-weight:bold; background:#eee;">
+                                            <td colspan="2">TỔNG CỘNG</td>
+                                            <td>${examRecord.baseQs.length}</td>
+                                            <td>${examRecord.matrix.reduce((sum, item) => sum + (item.count * item.score), 0).toFixed(2)}</td>
+                                            <td>100%</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+
+                                <div style="font-weight: bold; text-decoration: underline; margin-bottom: 15px; margin-top: 40px; font-size: 13pt; page-break-after: avoid; break-after: avoid;">II. HƯỚNG DẪN CHẤM CHI TIẾT:</div>
+                `;
+                
+                ex.questions.forEach((q, idx) => {
+                    let ansHTML = q.answer && q.answer.trim() !== '' ? q.answer : '<i>(Chưa có HDC)</i>';
+                    // Sửa lại thành auto để cho cắt ngang đáp án dài
+                    html += `<div class="print-q" style="margin-bottom: 25px; page-break-inside: auto; break-inside: auto;"><b>Câu ${idx+1} (${q.assignedScore} điểm):</b><div class="rubric-box">${ansHTML}</div></div>`;
+                });
+
+                html += `       <div style="text-align: center; font-weight: bold; margin-top: 40px; font-size: 13pt;">----------- HẾT HƯỚNG DẪN CHẤM -----------</div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>`;
+            });
+
+            const container = document.getElementById('print-container');
+            container.innerHTML = html;
+            if(window.MathJax) {
+                MathJax.typesetClear([container]);
+                MathJax.typesetPromise([container]).then(() => { setTimeout(() => { window.print(); }, 800); });
+            } else { setTimeout(() => { window.print(); }, 800); }
+        }
+    </script>
+</body>
+</html>
