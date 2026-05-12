@@ -106,3 +106,133 @@ window.handleLogout = function () {
         window.location.href = "start.html?logout=true";
     }
 };
+
+// =======================================================
+// HỆ THỐNG THÔNG BÁO TÙY CHỈNH (OFFLINE 100%)
+// =======================================================
+function showCustomAlert(title, message, type = 'error') {
+    return new Promise((resolve) => {
+        // 1. Tạo lớp phủ (Overlay) làm mờ nền
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10000; opacity: 0; transition: opacity 0.2s ease;
+        `;
+
+        // 2. Thiết lập màu sắc và icon theo loại thông báo
+        const isError = type === 'error';
+        const color = isError ? '#e74c3c' : '#27ae60'; // Đỏ lỗi, Xanh thành công
+        const icon = isError ? '⚠️' : '✅';
+
+        // 3. Tạo hộp thoại (Modal Box)
+        const box = document.createElement('div');
+        box.style.cssText = `
+            background: white; padding: 30px; border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2); max-width: 400px; width: 90%;
+            text-align: center; transform: scale(0.8); transition: transform 0.2s ease;
+            border-top: 5px solid ${color}; font-family: 'Segoe UI', Tahoma, sans-serif;
+        `;
+
+        box.innerHTML = `
+            <div style="font-size: 45px; margin-bottom: 10px;">${icon}</div>
+            <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 20px;">${title}</h3>
+            <p style="color: #64748b; font-size: 14.5px; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap;">${message}</p>
+            <button id="btn-custom-ok" style="
+                background: ${color}; color: white; border: none; padding: 10px 30px;
+                border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;
+                transition: 0.2s; box-shadow: 0 4px 10px ${color}40;
+            ">Đã hiểu</button>
+        `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // Hiệu ứng hiện ra mượt mà
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            box.style.transform = 'scale(1)';
+        });
+
+        // Xử lý khi bấm nút (Đóng hộp thoại và chạy tiếp code)
+        const closeAlert = () => {
+            overlay.style.opacity = '0';
+            box.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                document.body.removeChild(overlay);
+                resolve(); // Báo hiệu đã đóng xong
+            }, 200);
+        };
+
+        box.querySelector('#btn-custom-ok').addEventListener('click', closeAlert);
+    });
+}
+
+// =======================================================
+// HỘP THOẠI XÁC NHẬN TÙY CHỈNH (CÓ 2 NÚT)
+// =======================================================
+function showCustomConfirm(title, message, type = 'warning') {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                    background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+                    display: flex; justify-content: center; align-items: center;
+                    z-index: 10000; opacity: 0; transition: opacity 0.2s ease;
+                `;
+
+        const isDanger = type === 'danger';
+        const color = isDanger ? '#e74c3c' : '#f39c12'; // Đỏ (nguy hiểm) hoặc Cam (cảnh báo)
+        const icon = isDanger ? '🚨' : '⚠️';
+
+        const box = document.createElement('div');
+        box.style.cssText = `
+                    background: white; padding: 30px; border-radius: 12px;
+                    box-shadow: 0 15px 30px rgba(0,0,0,0.2); max-width: 450px; width: 90%;
+                    text-align: center; transform: scale(0.8); transition: transform 0.2s ease;
+                    border-top: 5px solid ${color}; font-family: 'Segoe UI', Tahoma, sans-serif;
+                `;
+
+        box.innerHTML = `
+                    <div style="font-size: 45px; margin-bottom: 10px;">${icon}</div>
+                    <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 20px;">${title}</h3>
+                    <p style="color: #64748b; font-size: 14.5px; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap;">${message}</p>
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button id="btn-custom-cancel" style="
+                            background: #f1f5f9; color: #64748b; border: none; padding: 10px 20px;
+                            border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+                            transition: 0.2s;
+                        ">Hủy bỏ</button>
+                        <button id="btn-custom-confirm" style="
+                            background: ${color}; color: white; border: none; padding: 10px 20px;
+                            border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+                            transition: 0.2s; box-shadow: 0 4px 10px ${color}40;
+                        ">Xác nhận Xóa</button>
+                    </div>
+                `;
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // Hiệu ứng popup mượt mà
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            box.style.transform = 'scale(1)';
+        });
+
+        // Xử lý khi bấm nút
+        const closeConfirm = (result) => {
+            overlay.style.opacity = '0';
+            box.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                document.body.removeChild(overlay);
+                resolve(result); // Trả về true hoặc false
+            }, 200);
+        };
+
+        // Bắt sự kiện 2 nút
+        box.querySelector('#btn-custom-cancel').addEventListener('click', () => closeConfirm(false));
+        box.querySelector('#btn-custom-confirm').addEventListener('click', () => closeConfirm(true));
+    });
+}
